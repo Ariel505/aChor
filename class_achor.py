@@ -11,14 +11,12 @@ from decimal import *
 scriptname = sys.argv[0]
 parser = argparse.ArgumentParser()
 parser.add_argument('classes', help='number of desired classes', type=int)
-parser.add_argument('swp', help='sweep interval', type=float)
 parser.add_argument('field', help='field to evaluate', type=str)
 parser.add_argument('shp', help='shapefile', type=str)
 parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
 args = parser.parse_args()
 
 cls = args.classes
-swp = args.swp
 field = args.field
 shp = args.shp
 output = args.output
@@ -27,10 +25,9 @@ class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
     values and generates breaks according to these"""
     
-    def __init__(self, cls, swp, field, shp, memory=None):
+    def __init__(self, cls, field, shp, memory=None):
         
         self.cls = cls
-        self.swp = swp
         self.field = field
         self.shp = shp
         self.memory = memory
@@ -60,7 +57,7 @@ class aChor(object):
                     print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
                     if temp[1] == True:
                         print(("Maximum breaks({})/classes({}) with sweep interval ({}) for"
-                               " value range of input dataset reached!".format(i+1,i+2,swp)))
+                               " value range of input dataset reached!".format(i+1,i+2,thrs)))
                         brks.append(temp[0])
                         break
                     brks.append(temp[0])
@@ -76,7 +73,7 @@ class aChor(object):
                     print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
                     if temp[1] == True:
                         print(("Maximum breaks({})/classes({}) with sweep interval ({}) for"
-                               " value range of input dataset reached!".format(i+1,i+2,swp)))
+                               " value range of input dataset reached!".format(i+1,i+2,thrs)))
                         brks.append(temp[0])
                         break
                     brks.append(temp[0])
@@ -169,9 +166,7 @@ class aChor(object):
     def neighborsearch(self):
         
         print("Starting neighbor search...")
-        
-        
-        
+
         if not os.path.dirname(scriptname):
             current_dir = os.getcwd() 
         else:
@@ -280,6 +275,17 @@ class aChor(object):
         significance in field values"""
         
         print("Selecting significance sorted center-neighbor-polygon pairs...")
+        
+        sql_selection_field_stats = """SELECT 
+                                max(center)-min(center) 
+                                FROM neighborpairs
+                                """
+        cur.execute(sql_selection_field_stats)
+        field_stats = cur.fetchone()
+
+        valrange = round(field_stats[0],2)
+        global thrs
+        thrs = round((valrange/500),1)
 
         # sql statement for locExtreme
         sql_localextreme = """
@@ -288,7 +294,7 @@ class aChor(object):
               WHERE nb."CenterID" = loc."PolygonID" and  ABS(nb."Difference") > {}
               GROUP by nb."CenterID", loc."Note"
               ORDER by  MIN(ABS(nb."Difference")) DESC
-        """.format(self.swp)
+        """.format(thrs)
         cur.execute(sql_localextreme)
         db_selection_localextreme = [row for row in cur.fetchall()]
 
@@ -308,7 +314,7 @@ class aChor(object):
               WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" > {}
               GROUP BY nb."CenterID", loc."Note"
               ORDER BY MIN(nb."Difference") DESC;
-        """.format(self.swp)
+        """.format(thrs)
         cur.execute(sql_localmax)
         db_selection_localmax = [row for row in cur.fetchall()]
 
@@ -328,7 +334,7 @@ class aChor(object):
               WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" < {}
               GROUP BY nb."CenterID", loc."Note"
               ORDER BY MAX(nb."Difference") ASC;
-        """.format(self.swp)
+        """.format(thrs)
         cur.execute(sql_localmin)
         db_selection_localmin = [row for row in cur.fetchall()]
 
@@ -366,10 +372,8 @@ class aChor(object):
         
         segments = []        # will contain line segments according to by significance 
                              # sorted center-neighbor value ranges
+        vals = []
                              
-        vals = []            # container for the later estimation of dataset parameters
-                             # for iteration
-    
         cur.execute('SELECT * FROM line_sweep')
         if not cur.fetchone():
             cur.execute("""INSERT INTO line_sweep 
@@ -393,20 +397,37 @@ class aChor(object):
 
             #create line segments
             segments.append([uid, LineString([(center_val, i+1), (neighbor_val, i+1)])])
-
-            # get value range
+            
             vals.append(center_val)
 
-    
         # dataset parameters for intersection search
         minval = min(vals)
         maxval = max(vals)
         valrange = len(vals)
-        #calc = abs((maxval-minval)/valrange)
-        #min_dif = (calc/10 if 0.9 < calc < 1.1 else calc) # <-- ???how to determine the optimal sweep interval with respect to dataset value range???
-        min_dif = self.swp
+        min_dif = thrs
+
+        
+        # test
+        #sql_linesweep_field_stats = """SELECT 
+                                #max(center), 
+                                #min(center), 
+                                #max(center)-min(center) 
+                                #FROM neighborpairs
+                                #"""
+        #cur.execute(sql_linesweep_field_stats)
+        #field_stats = cur.fetchone()
+        
+        #maxval = field_stats[0]
+        #minval = field_stats[1]
+        #valrange = round(field_stats[2],2)
+        #min_dif = round((valrange/500),1)
+        
+        #print(minval, tminval)
+        #print(maxval, tmaxval)
+        #print(min_dif, tmin_dif)
         
         # intersection search
+        
         sweep = minval # set starting point for iteration
         
         # result of intersection search, containing: 
@@ -416,14 +437,13 @@ class aChor(object):
         # until the max value of the dataset is not reached the sweep will iterate 
         # through the value range with the given sweep interval and check for 
         # intersections with the given set of line segments
-    
+        
         while sweep <= maxval:
             match_segments = [segment[0] for i, segment in enumerate(segments) 
                                 if segment[1].contains(Point(sweep, i+1))]
             
             sweep += min_dif
-            
-            intersection.append((len(match_segments), round(sweep,2), [x for x in match_segments]))
+            intersection.append((len(match_segments), round(sweep,2), [x for x in match_segments]))        
             
         if sys.version_info.major < 3:
             to_db = [(intersection[i][0], 
@@ -529,11 +549,13 @@ class aChor(object):
             # check if database empty? if yes return the last value
             cur.execute("SELECT * FROM line_sweep")
             if not cur.fetchone():
+                
                 return (round(residual_brk_val, 2),True)
 
             self.linesweep()
 
             return (round(residual_brk_val, 2),False)
+        
         # after removing the previously evaluated line segments run the line 
         # sweep again
         self.linesweep()
@@ -542,6 +564,6 @@ class aChor(object):
         
  #def __init__(self, cls, swp, field, shp, memory=None):        
 start = time.time()
-aChor(cls, swp, field, shp , 1 if output else 0)
+aChor(cls, field, shp , 1 if output else 0)
 print("Execution time: {}s".format(round(time.time()-start)))
 con.close()
