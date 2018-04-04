@@ -11,7 +11,7 @@ def suggest_sweep(inp, attr):
     
     valrange = max_val-min_val
     
-    return round(valrange/500,2) if valrange < 500 else round(valrange/1000, 2)
+    return round(valrange/1000,2) if valrange < 500 else round(valrange/500, 2)
 
 if __name__ == "__main__":
     
