@@ -27,6 +27,19 @@ class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
     values and generates breaks according to these"""
     
+    def version_check(method):
+        """A wrapper for checking the current python environment version for
+        selecting the appropriate arguments for open()"""
+        def wrapper(self):
+            if sys.version_info.major < 3:
+                with open("achorbreaks.csv", 'wb') as fout:
+                    method(self, fout)
+            else:
+                with open("achorbreaks.csv", 'w', newline='') as fout:
+                    method(self, fout)
+            return None
+        return wrapper
+    
     def __init__(self, cls, swp, field, shp, memory=None):
         
         self.cls = cls
@@ -51,38 +64,47 @@ class aChor(object):
         self.db()
         self.neighborsearch()
         self.selection()
-        if sys.version_info.major < 3:
-            with open("achorbreaks.csv", 'wb') as fout:
-                writer = csv.writer(fout, delimiter=",")
-                brks = []
-                for i in range(0,self.cls-1):
-                    temp = self.breaks()
-                    print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
-                    if temp[1] == True:
-                        print(("Maximum breaks({})/classes({}) with sweep interval ({}) for"
-                               " value range of input dataset reached!".format(i+1,i+2,swp)))
-                        brks.append(temp[0])
-                        break
-                    brks.append(temp[0])
-                else: 
-                    print("{} breaks/{} classes generated.".format(cls-1,cls))     
-                [writer.writerow([brk]) for brk in brks]
-        else:
-            with open("achorbreaks.csv", 'w', newline='') as fout:
-                writer = csv.writer(fout, delimiter=",")
-                brks = []
-                for i in range(0,self.cls-1):
-                    temp = self.breaks()
-                    print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
-                    if temp[1] == True:
-                        print(("Maximum breaks({})/classes({}) with sweep interval ({}) for"
-                               " value range of input dataset reached!".format(i+1,i+2,swp)))
-                        brks.append(temp[0])
-                        break
-                    brks.append(temp[0])
-                else: 
-                    print("{} breaks/{} classes generated.".format(cls-1,cls))     
-                [writer.writerow([brk]) for brk in brks]
+        self.generate_output()
+    
+    @version_check
+    def generate_output(self, fout):
+        """Generates spatial context defined localextreme breaks with respect to
+        the desired amount of classes
+        
+        An iteration with respect to the class amount is performed, which calls the 
+        breaks() method to run the line sweep algorithm
+        
+        Args:
+            fout - file object from the version_check decorator pointing to the
+                   output file"""
+        
+        writer = csv.writer(fout, delimiter=",")
+        brks = []
+        for i in range(0,self.cls-1):
+            temp = self.breaks()
+            print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
+            if temp[1] == True:
+                brks.append(temp[0])
+                # eventually turn this into a function to be able to recursively 
+                # apply it. At the moment only twice the size of len(brks) at this
+                # point can be produced
+                temp_brks = sorted(brks, reverse=True)
+                brks_diff = sorted(((i-j, i, j) 
+                                    for i, j in zip(temp_brks, temp_brks[1:])), 
+                                   reverse=True)
+                k = 0
+                while len(brks) < self.cls-1:
+                    residual_brk = round(( brks_diff[k][1] + brks_diff[k][2] ) / 2, 2)
+                    brks.append(residual_brk)
+                    k += 1
+                    print("Classes: {}, Breakvalue: {}".format(len(brks)+1, residual_brk))
+                else:
+                    print("{} breaks/{} classes generated.".format(len(brks),self.cls))
+                break
+            brks.append(temp[0])
+        else: 
+            print("{} breaks/{} classes generated.".format(self.cls-1,self.cls))     
+        [writer.writerow([brk]) for brk in brks]        
         
     def db(self):
         """Creates necessary tables in the database"""
@@ -165,6 +187,12 @@ class aChor(object):
         cur.execute(sql_intersection)
         con.commit()
         
+        sql_desired_classes = """
+        CREATE TABLE IF NOT EXISTS desired_classes (
+            brks NUMERIC NOT NULL
+        );
+        """
+        cur.execute(sql_desired_classes)
         
     def neighborsearch(self):
         
@@ -277,7 +305,6 @@ class aChor(object):
             print("Finish neighborsearch")
         
     def selection(self):
-        
         """Creates a selection of signifcant Center-Neighbor Pairs 
         
         Goal is to select center-neighbor-polygon relationships with respect to
@@ -348,7 +375,6 @@ class aChor(object):
         print("Finish selection.\nStarting sweep and generate breaks...")
         
     def linesweep(self):
-        
         """Performs a line sweep 
         
         This function uses the results from the neighborsearch to create a set of 
@@ -406,9 +432,7 @@ class aChor(object):
         # dataset parameters for intersection search
         minval = min(vals)
         maxval = max(vals)
-        valrange = len(vals)
-        #calc = abs((maxval-minval)/valrange)
-        #min_dif = (calc/10 if 0.9 < calc < 1.1 else calc) # <-- ???how to determine the optimal sweep interval with respect to dataset value range???
+        
         min_dif = self.swp
         
         # intersection search
@@ -444,7 +468,6 @@ class aChor(object):
         return to_db        
         
     def breaks(self):
-        
         """Generates breaks from a linesweep intersection search
         
             Uses the results from the linesweep()-method to select the breaks
@@ -471,7 +494,8 @@ class aChor(object):
                                 (cnt, sweep, seg)
                                VALUES (?, ?, ?);""", self.linesweep())
             con.commit()
-        # For the following SQL-statement i got help from stackexchange
+        # For the following SQL-statement i got help from stackexchange.
+        # comment how it is done!
         cur.execute("""WITH uppers(rowid) AS (
                           SELECT f.rowid FROM intersection f
                           WHERE cnt = (SELECT MAX(cnt) FROM intersection)
