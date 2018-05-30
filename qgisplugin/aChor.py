@@ -311,7 +311,7 @@ class aChor:
         elif valrange > 1000:
             suggestion = valrange/(valrange/2)
         self.dlg.lineEdit2.setText(str(suggestion))
-
+        
     def create_colorrange(self, i_step, i_start, i_stop, mid=None):
         import math
         """Takes a number of steps to create a color range for given hex color values"""
@@ -328,20 +328,46 @@ class aChor:
                 
                 start_rgb.extend([int(start[i:i+2], 16) for i in (0, 2, 4)])
                 stop_rgb.extend([int(stop[i:i+2], 16) for i in (0, 2, 4)])
-                    
-                color_gradient = [initial_start]
-                step_rgb = []
                 
+                color_gradient = [initial_start]
+                
+                step_rgb = []
+                operator = []
+
                 for start, stop in zip(start_rgb, stop_rgb):
+                    print(start, stop)
                     step_rgb.append(int(abs(start-stop)/(step-1)))
+                    if start > stop:
+                        operator.append('-')
+                    else:
+                        operator.append('+')
+
+                for i in range(int(step)-2):
+                    for i in range(3):
+                        if operator[i] == "+":
+                            start_rgb[i] += step_rgb[i]
+                        elif operator[i] == "-":
+                            start_rgb[i] -= step_rgb[i]
                     
-                for i in range(step-2):
-                    start_rgb[0] -= step_rgb[0]
-                    start_rgb[1] -= step_rgb[1]
-                    start_rgb[2] -= step_rgb[2]
-                    #print([abs(x) for x in start_rgb])
-                    result = '#' + ''.join(str(hex(abs(rgb_val))).lstrip('0x') if rgb_val != 0
-                                           else ''.join('00') for rgb_val in start_rgb)
+                    result = '#' + ''.join('00' if abs(rgb_val) == 0 else
+                                           '01' if abs(rgb_val) == 1 else
+                                           '02' if abs(rgb_val) == 2 else
+                                           '03' if abs(rgb_val) == 3 else
+                                           '04' if abs(rgb_val) == 4 else
+                                           '05' if abs(rgb_val) == 5 else
+                                           '06' if abs(rgb_val) == 6 else
+                                           '07' if abs(rgb_val) == 7 else
+                                           '08' if abs(rgb_val) == 8 else
+                                           '09' if abs(rgb_val) == 9 else
+                                           '0a' if abs(rgb_val) == 10 else
+                                           '0b' if abs(rgb_val) == 11 else
+                                           '0c' if abs(rgb_val) == 12 else
+                                           '0d' if abs(rgb_val) == 13 else
+                                           '0e' if abs(rgb_val) == 14 else
+                                           '0f' if abs(rgb_val) == 15 else
+                                           str(hex(abs(rgb_val))).lstrip('0x')
+                                           for rgb_val in start_rgb)
+                    
                     color_gradient.append(result)
                     
                 color_gradient.append(initial_stop)
@@ -424,79 +450,72 @@ class aChor:
                 qgis.utils.iface.actionShowPythonDialog().trigger()
                 logging.info("Starting main script")
 
-                try:          
+                         
                     
-                    proc = subprocess.Popen(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp],creationflags=CREATE_NEW_CONSOLE,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                    #subprocess.call(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp])
-                    while True:
-                        out = proc.stdout.readline()
-                        if out == '' and proc.poll() is not None:
-                            break
-                        if not str(out).strip() == '':
-                            logging.info('subprocess:'+out)                    
-                    csvfile = self.plugin_dir+'/achorbreaks.csv'
-                    try: 
-                        rcsv = open(csvfile, 'r')
-                        sortedlist = sorted(rcsv, key= lambda x: float(x))
-                        #logging.info(sortedlist)
-                        i = 0
-                        
-                        ranges = []
-                        colorstr = []
-                        minval = achor_min_val
-                        while i < int(classnum)-1:                  
-                            colorstr.append(str(minval) + '_' + sortedlist[i].strip())                        
-                            minval = float(sortedlist[i].strip())
-                            logging.info('breaks:'+sortedlist[i])
-                            i += 1
-                        # define ranges: label, lower value, upper value, color name
-                        #logging.info(colorstr)
-                        # red = Color("#fbc1c1")
-                        # colors = list(red.range_to(Color("#ff0000"),5))
-                        # blue = Color("#1c46c4")
-                        # colors1 = list(blue.range_to(Color("#a6cee3"),5))
-                        #logging.info(str(colors[1]).strip())
-                        white_blue = self.create_colorrange(int(classnum)-1, '#FFFFFF', '#0000FF')
-                        #green_red = self.create_colorrange(int(classnum)-1, '#00FF00', '#FF0000')
-                        green_yellow_red = self.create_colorrange(int(classnum)-1, '#00ff00', '#FF0000', '#FFFF00')
-                        # color_ranges = (
-                                # (colorstr[0], float(colorstr[0].split('_')[0]), float(colorstr[0].split('_')[1]), str(colors1[0]).strip()),
-                                # (colorstr[1], float(colorstr[1].split('_')[0]), float(colorstr[1].split('_')[1]), str(colors1[1]).strip()),
-                                # (colorstr[2], float(colorstr[2].split('_')[0]), float(colorstr[2].split('_')[1]), str(colors1[2]).strip()),
-                                # (colorstr[3], float(colorstr[3].split('_')[0]), float(colorstr[3].split('_')[1]), str(colors1[3]).strip()),
-                                # (colorstr[4], float(colorstr[4].split('_')[0]), float(colorstr[4].split('_')[1]), str(colors1[4]).strip()),
-                                # (colorstr[5], float(colorstr[5].split('_')[0]), float(colorstr[5].split('_')[1]), str(colors[0]).strip()),
-                                # (colorstr[6], float(colorstr[6].split('_')[0]), float(colorstr[6].split('_')[1]), str(colors[1]).strip()),
-                                # (colorstr[7], float(colorstr[7].split('_')[0]), float(colorstr[7].split('_')[1]), str(colors[2]).strip()),
-                                # (colorstr[8], float(colorstr[8].split('_')[0]), float(colorstr[8].split('_')[1]), str(colors[3]).strip()),
-                                # (str(minval)+"_19.0", minval, 19.0, str(colors[4]).strip()),
-                            # )
-                        crange = white_blue
-                        if self.dlg.cBox.currentIndex() == 1:
-                            crange = green_yellow_red
-                        color_ranges = []
-                        for i in range(len(colorstr)-1):
-                            #print(colorstr[i])
-                            color_ranges.append((colorstr[i], float(colorstr[i].split('_')[0]), float(colorstr[i].split('_')[1]), crange[i]))
-                        #print(color_ranges)
-                        # create a category for each item in attribute
-                        for label, lower, upper, color in color_ranges:
-                             symbol = QgsSymbolV2.defaultSymbol(myVectorLayer.geometryType())
-                             symbol.setColor(QColor(color))
-                             rng = QgsRendererRangeV2(lower, upper, symbol, label)
-                             ranges.append(rng)
-                            
-                        # create the renderer and assign it to a layer
-                        expression = field # field name
-                        renderer = QgsGraduatedSymbolRendererV2(expression, ranges)
-                        myVectorLayer.setRendererV2(renderer)
-                        QgsMapLayerRegistry.instance().addMapLayer(myVectorLayer)
-                        myVectorLayer.triggerRepaint()
-                    except:
-                        logging.warning('csv error')
-                except:
-                    logging.warning('subprocess failed')
-                    return
+                proc = subprocess.Popen(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp],creationflags=CREATE_NEW_CONSOLE,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                #subprocess.call(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp])
+                while True:
+                    out = proc.stdout.readline()
+                    if out == '' and proc.poll() is not None:
+                        break
+                    if not str(out).strip() == '':
+                        logging.info('subprocess:'+out)                    
+                csvfile = self.plugin_dir+'/achorbreaks.csv'
+                 
+                rcsv = open(csvfile, 'r')
+                sortedlist = sorted(rcsv, key= lambda x: float(x))
+                #logging.info(sortedlist)
+                i = 0
+                
+                ranges = []
+                colorstr = []
+                minval = achor_min_val
+                while i < int(classnum)-1:                  
+                    colorstr.append(str(minval) + '_' + sortedlist[i].strip())                        
+                    minval = float(sortedlist[i].strip())
+                    logging.info('breaks:'+sortedlist[i])
+                    i += 1
+                    
+                # create colorramps according to the amount of classes/breaks
+                white_blue = self.create_colorrange(int(classnum)-1, '#FFFFFF', '#0000FF') #default
+                green_yellow_red = self.create_colorrange(int(classnum), '#00ff00', '#FF0000', '#FFFF00')
+                blue_beige_red = self.create_colorrange(int(classnum), '#4158f4', '#f94545', '#f7b559')
+
+                crange = white_blue # default
+                crange_selection = self.dlg.cBox.currentIndex() # get the selection from the gui
+                # provide other options
+                if crange_selection == 1:
+                    crange = green_yellow_red
+                elif crange_selection == 2:
+                    crange = blue_beige_red
+                    #crange = blue_beige_red
+                
+                print("white blue: ", len(white_blue))
+                print("green_yellow_red: ", len(green_yellow_red))
+                print("blue_beige_red: ", len(blue_beige_red))
+                print("colorstr: ", colorstr)
+                color_ranges = []
+                for i in range(len(colorstr)-1):
+                    color_ranges.append((colorstr[i], float(colorstr[i].split('_')[0]), float(colorstr[i].split('_')[1]), crange[i]))
+                    #print(color_ranges)
+                    if i == len(colorstr)-2:
+                        color_ranges.append((colorstr[i].split("_")[1] + "_" + str(achor_max_val), float(colorstr[i].split("_")[1]), float(achor_max_val), crange[i+1]))
+                for i in color_ranges:
+                    print(i)
+                # create a category for each item in attribute
+                for label, lower, upper, color in color_ranges:
+                     symbol = QgsSymbolV2.defaultSymbol(myVectorLayer.geometryType())
+                     symbol.setColor(QColor(color))
+                     rng = QgsRendererRangeV2(lower, upper, symbol, label)
+                     ranges.append(rng)
+                    
+                # create the renderer and assign it to a layer
+                expression = field # field name
+                renderer = QgsGraduatedSymbolRendererV2(expression, ranges)
+                myVectorLayer.setRendererV2(renderer)
+                QgsMapLayerRegistry.instance().addMapLayer(myVectorLayer)
+                myVectorLayer.triggerRepaint()
+
                 
 
 
