@@ -311,7 +311,7 @@ class aChor:
         elif valrange > 1000:
             suggestion = valrange/(valrange/2)
         self.dlg.lineEdit2.setText(str(suggestion))
-        
+    
     def create_colorrange(self, i_step, i_start, i_stop, mid=None):
         import math
         """Takes a number of steps to create a color range for given hex color values"""
@@ -335,7 +335,6 @@ class aChor:
                 operator = []
 
                 for start, stop in zip(start_rgb, stop_rgb):
-                    print(start, stop)
                     step_rgb.append(int(abs(start-stop)/(step-1)))
                     if start > stop:
                         operator.append('-')
@@ -349,27 +348,13 @@ class aChor:
                         elif operator[i] == "-":
                             start_rgb[i] -= step_rgb[i]
                     
-                    result = '#' + ''.join('00' if abs(rgb_val) == 0 else
-                                           '01' if abs(rgb_val) == 1 else
-                                           '02' if abs(rgb_val) == 2 else
-                                           '03' if abs(rgb_val) == 3 else
-                                           '04' if abs(rgb_val) == 4 else
-                                           '05' if abs(rgb_val) == 5 else
-                                           '06' if abs(rgb_val) == 6 else
-                                           '07' if abs(rgb_val) == 7 else
-                                           '08' if abs(rgb_val) == 8 else
-                                           '09' if abs(rgb_val) == 9 else
-                                           '0a' if abs(rgb_val) == 10 else
-                                           '0b' if abs(rgb_val) == 11 else
-                                           '0c' if abs(rgb_val) == 12 else
-                                           '0d' if abs(rgb_val) == 13 else
-                                           '0e' if abs(rgb_val) == 14 else
-                                           '0f' if abs(rgb_val) == 15 else
-                                           str(hex(abs(rgb_val))).lstrip('0x')
+                    result = '#' + ''.join('0' + str(hex(abs(rgb_val))).lstrip('0x')
+                                           if abs(rgb_val) in ([x for x in range(1,16)])
+                                           else '00' if abs(rgb_val) == 0 
+                                           else str(hex(abs(rgb_val))).lstrip('0x')
                                            for rgb_val in start_rgb)
                     
-                    color_gradient.append(result)
-                    
+                    color_gradient.append(result)  
                 color_gradient.append(initial_stop)
                 
                 return color_gradient
@@ -380,12 +365,11 @@ class aChor:
             case_even = 0
             if i_step % 2 == 0:
                 case_even = 1
-            i_step = math.ceil(i_step / 2)
+            i_step = math.ceil(float(i_step) / 2)
             result = [x for x in get_range(i_step, i_start, mid)]
             result.extend([x for x in get_range(i_step+case_even, mid, i_stop)[1:]])
-
+            
             return result
-
         return get_range(i_step, i_start, i_stop)
         
     def run(self):
@@ -475,7 +459,7 @@ class aChor:
                     minval = float(sortedlist[i].strip())
                     logging.info('breaks:'+sortedlist[i])
                     i += 1
-                    
+                
                 # create colorramps according to the amount of classes/breaks
                 white_blue = self.create_colorrange(int(classnum)-1, '#FFFFFF', '#0000FF') #default
                 green_yellow_red = self.create_colorrange(int(classnum), '#00ff00', '#FF0000', '#FFFF00')
@@ -489,19 +473,13 @@ class aChor:
                 elif crange_selection == 2:
                     crange = blue_beige_red
                     #crange = blue_beige_red
-                
-                print("white blue: ", len(white_blue))
-                print("green_yellow_red: ", len(green_yellow_red))
-                print("blue_beige_red: ", len(blue_beige_red))
-                print("colorstr: ", colorstr)
+
                 color_ranges = []
                 for i in range(len(colorstr)-1):
                     color_ranges.append((colorstr[i], float(colorstr[i].split('_')[0]), float(colorstr[i].split('_')[1]), crange[i]))
-                    #print(color_ranges)
                     if i == len(colorstr)-2:
                         color_ranges.append((colorstr[i].split("_")[1] + "_" + str(achor_max_val), float(colorstr[i].split("_")[1]), float(achor_max_val), crange[i+1]))
-                for i in color_ranges:
-                    print(i)
+
                 # create a category for each item in attribute
                 for label, lower, upper, color in color_ranges:
                      symbol = QgsSymbolV2.defaultSymbol(myVectorLayer.geometryType())
