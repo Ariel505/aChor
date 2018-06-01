@@ -8,7 +8,7 @@ from shapely.geometry import shape, LineString, Point
 from rtree import index
 from decimal import *
 
-scriptname = sys.argv[0]
+
 
 
 class aChor(object):
@@ -28,12 +28,13 @@ class aChor(object):
             return None
         return wrapper
     
-    def __init__(self, cls, swp, field, shp, memory=None):
+    def __init__(self, cls, swp, field, shp, method=1, memory=None):
         
         self.cls = cls
         self.swp = swp
         self.field = field
         self.shp = shp
+        self.method = method
         self.memory = memory
         
         if not memory:
@@ -103,7 +104,7 @@ class aChor(object):
             i += 1
             print("Classes: {}, Breakvalue: {}".format(len(brks)+1, residual_brk))
             if len(brks) == cls:
-                print("{} breaks/{} classes generated.".format(len(brks), cls))
+                print("{} breaks/{} classes generated.".format(len(brks), cls+1))
                 return brks
                 
         return self.desired_breaks(brks, cls)
@@ -405,13 +406,30 @@ class aChor(object):
     
         cur.execute('SELECT * FROM line_sweep')
         if not cur.fetchone():
-            cur.execute("""INSERT INTO line_sweep 
-                        SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
-                                    FROM "locExtremePairs" loc, "neighborPairs" nb
-                                    WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference")
-                                    GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
-                                    ORDER BY loc."min" DESC;""")
-            con.commit()
+            if self.method == 1:
+                cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference")
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                con.commit()
+            if self.method == 2:
+                 cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference") and loc."Note"="localmax"
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                 con.commit()
+            if self.method == 3:
+                 cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference") and loc."Note"="localmin"
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                 con.commit()
 
         cur.execute("SELECT rowid, centerid, polygonid, center, neighbor, min, note FROM line_sweep")
         data = cur.fetchall()
@@ -573,21 +591,24 @@ class aChor(object):
 
     # con.close()
 if __name__ == "__main__":
+    scriptname = sys.argv[0]
     parser = argparse.ArgumentParser()
     parser.add_argument('classes', help='number of desired classes', type=int)
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
     args = parser.parse_args()
 
     cls = args.classes
     swp = args.swp
+    method = args.method
     field = args.field
     shp = args.shp
     output = args.output
      #def __init__(self, cls, swp, field, shp, memory=None):        
     start = time.time()
-    aChor(cls, swp, field, shp , 1 if output else 0)
+    aChor(cls, swp, field, shp, 1 if not method else method, 1 if output else 0)
     print("Execution time: {}s".format(round(time.time()-start)))
     

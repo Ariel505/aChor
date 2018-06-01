@@ -422,21 +422,31 @@ class aChor:
                 interval = self.dlg.lineEdit2.text()
                 field = self.dlg.comboBox.currentText()
                 shp = str(path)
+                if self.dlg.rdb1_2.isChecked():
+                    method = '1'
+                    display = 'localextreme'
+                elif self.dlg.rdb1.isChecked():
+                    method = '2'
+                    display = 'localmax'
+                elif self.dlg.rdb2.isChecked():
+                    method = '3'
+                    display = 'localmin'
                 
                 QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
-                     self.tr(self.plugin_dir+'\n'+classnum+'\n'+interval+'\n'+field+'\n'+shp), QMessageBox.Ok)
-                logging.info('class number:'+classnum+'\ninterval:'+interval+'\nfield:'+field+'\nshapefile:'+shp)
+                     self.tr(self.plugin_dir+'\n'+classnum+'\n'+interval+'\n'+field+'\n'+shp+'\n'+display), QMessageBox.Ok)
+                logging.info('class number:'+classnum+'\ninterval:'+interval+'\nfield:'+field+'\nshapefile:'+shp+'\nmethod:'+display)
                 sys.argv.append(classnum)
                 sys.argv.append(interval)
                 sys.argv.append(field)
                 sys.argv.append(shp)
+                sys.argv.append(method)
                 
                 qgis.utils.iface.actionShowPythonDialog().trigger()
                 logging.info("Starting main script")
 
                          
                     
-                proc = subprocess.Popen(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp],creationflags=CREATE_NEW_CONSOLE,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                proc = subprocess.Popen(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp, "-m "+method],creationflags=CREATE_NEW_CONSOLE,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
                 #subprocess.call(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp])
                 while True:
                     out = proc.stdout.readline()
