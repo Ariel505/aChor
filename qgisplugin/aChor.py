@@ -483,12 +483,12 @@ class aChor:
                 elif crange_selection == 2:
                     crange = blue_beige_red
                     #crange = blue_beige_red
-
                 color_ranges = []
                 for i in range(len(colorstr)-1):
                     color_ranges.append((colorstr[i], float(colorstr[i].split('_')[0]), float(colorstr[i].split('_')[1]), crange[i]))
                     if i == len(colorstr)-2:
-                        color_ranges.append((colorstr[i].split("_")[1] + "_" + str(achor_max_val), float(colorstr[i].split("_")[1]), float(achor_max_val), crange[i+1]))
+                        color_ranges.append((colorstr[i+1], float(colorstr[i+1].split('_')[0]), float(colorstr[i+1].split('_')[1]), crange[i+1]))
+                        color_ranges.append((colorstr[i+1].split("_")[1] + "_" + str(achor_max_val), float(colorstr[i+1].split("_")[1]), float(achor_max_val), crange[i+2]))
 
                 # create a category for each item in attribute
                 for label, lower, upper, color in color_ranges:
