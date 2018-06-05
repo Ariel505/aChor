@@ -8,9 +8,6 @@ from shapely.geometry import shape, LineString, Point
 from rtree import index
 from decimal import *
 
-
-
-
 class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
     values and generates breaks according to these"""
@@ -30,11 +27,11 @@ class aChor(object):
     
     def __init__(self, cls, swp, field, shp, method=1, memory=None):
         
-        self.cls = cls
-        self.swp = swp
-        self.field = field
-        self.shp = shp
-        self.method = method
+        self.cls = int(cls)
+        self.swp = float(swp)
+        self.field = str(field)
+        self.shp = str(shp)
+        self.method = int(method)
         self.memory = memory
         
         if not memory:
@@ -201,19 +198,21 @@ class aChor(object):
         
         print("Starting neighbor search...")
         
-        if not os.path.dirname(scriptname):
-            current_dir = os.getcwd() 
-        else:
-            current_dir = os.path.split(os.path.abspath(scriptname))[0]
-            os.chdir(current_dir)
-            
+        plugin_dir_qgis = os.path.join(os.path.expanduser("~"), '.qgis2/python/plugins/aChor')
+        os.chdir(plugin_dir_qgis)
+        
         if not os.path.isdir('tmp'): os.mkdir('tmp') 
         
         inputshp = self.shp
         outputshp = r"tmp/inputshape.shp"
         
-        subprocess.call(['python.exe','multi2single.py',inputshp,outputshp])
-
+        #make it cross-platform compatible
+        if os.name == "nt":
+            py_executable = 'python.exe'
+        elif os.name == "posix":
+            py_executable = 'python'
+        subprocess.call([py_executable,'multi2single.py',inputshp,outputshp])
+        
         with fiona.open(outputshp) as source:
             features = list(source)  # copy to list
         

@@ -29,12 +29,13 @@ from qgis.core import (QgsSymbolV2,QgsRendererRangeV2,QgsGraduatedSymbolRenderer
 # Import the code for the dialog
 from aChor_dialog import aChorDialog
 import os.path
-import numpy, os, sys, subprocess
-from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
+import numpy, os, sys, subprocess, shlex
+from subprocess import Popen, PIPE
 from osgeo import ogr
 import qgis.utils
 import fiona, logging, csv
-from colour import Color
+import class_achor
+
 
 
     
@@ -381,9 +382,7 @@ class aChor:
         layers, layers_shp = self.loadLayerList()
         if len(layers) == 0:
             return
-        
-
-
+  
         #set regular expression
         rx = QRegExp('^[1-9]\d{1}$')
         validator = QRegExpValidator(rx)
@@ -395,9 +394,7 @@ class aChor:
         self.dlg.show()
 
         self.load_comboBox()
-        
 
-            
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
@@ -443,17 +440,10 @@ class aChor:
                 
                 qgis.utils.iface.actionShowPythonDialog().trigger()
                 logging.info("Starting main script")
-
-                         
-                    
-                proc = subprocess.Popen(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp, "-m "+method],creationflags=CREATE_NEW_CONSOLE,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                #subprocess.call(['python.exe', self.plugin_dir+'/class_achor.py', classnum,interval,field,shp])
-                while True:
-                    out = proc.stdout.readline()
-                    if out == '' and proc.poll() is not None:
-                        break
-                    if not str(out).strip() == '':
-                        logging.info('subprocess:'+out)                    
+                
+                # runn achor-classification
+                logging.info(class_achor.aChor(classnum, interval, field, shp, method))
+                   
                 csvfile = self.plugin_dir+'/achorbreaks.csv'
                  
                 rcsv = open(csvfile, 'r')
@@ -471,18 +461,20 @@ class aChor:
                     i += 1
                 
                 # create colorramps according to the amount of classes/breaks
-                white_blue = self.create_colorrange(int(classnum)-1, '#FFFFFF', '#0000FF') #default
-                green_yellow_red = self.create_colorrange(int(classnum), '#00ff00', '#FF0000', '#FFFF00')
+                white_blue = self.create_colorrange(int(classnum), '#FFFFFF', '#3b71c6') #default
+                green_yellow_red = self.create_colorrange(int(classnum), '#0ac956', '#f7411d', '#f7e81d')
                 blue_beige_red = self.create_colorrange(int(classnum), '#4158f4', '#f94545', '#f7b559')
 
-                crange = white_blue # default
                 crange_selection = self.dlg.cBox.currentIndex() # get the selection from the gui
+                
                 # provide other options
-                if crange_selection == 1:
+                if crange_selection == 0:
+                    crange = white_blue
+                elif crange_selection == 1:
                     crange = green_yellow_red
                 elif crange_selection == 2:
                     crange = blue_beige_red
-                    #crange = blue_beige_red
+                    
                 color_ranges = []
                 for i in range(len(colorstr)-1):
                     color_ranges.append((colorstr[i], float(colorstr[i].split('_')[0]), float(colorstr[i].split('_')[1]), crange[i]))
