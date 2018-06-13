@@ -9,9 +9,9 @@ Pre-request python packages:
 Minimum Verion: Rtree(0.8.3), Shapely, Fiona, Sqlite3(Optional)
 
 Install Rtree: (in Linux python 2.x)
->> sudo apt install python-rtree_0.8.3+ds-1_all.deb <br/>
-Or: <br/>
 >> sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb
+And: <br/>
+>> sudo apt install /filedir/python-rtree_0.8.3+ds-1_all.deb <br/>
 
 Usage:
 >> python class_achor.py [class_num] [sweep_interval] [field_name] [shapefile] [method]
