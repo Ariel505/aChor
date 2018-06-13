@@ -10,6 +10,7 @@ Minimum Verion: Rtree(0.8.3), Shapely, Fiona, Sqlite3(Optional)
 
 Install Rtree: (in Linux python 2.x)
 >> sudo apt install python-rtree_0.8.3+ds-1_all.deb
+Or:
 >> sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb
 
 Usage:
