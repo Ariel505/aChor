@@ -9,10 +9,10 @@ This plugin <b>aChor</b> was designed only for polygon shapefile dataset<br>
 &nbsp;&nbsp;You may download a test dataset here:&nbsp;&nbsp;<a href="https://goo.gl/8ixjNn">https://goo.gl/8ixjNn</a><br><br>
 <p>
 Your default aChor plugin directory is located at:<br>
-&nbsp;&nbsp;Windows QGIS2:<b>C:/Users/user_name/.qgis2/python/plugins/aChor</b><br>
-&nbsp;&nbsp;Linux QGIS2:<b>/home/user_name/.qgis2/python/plugins/aChor</b><br>
-&nbsp;&nbsp;Windows QGIS3:<b>C:/OSGeo4W/apps/qgis/python/plugins/aChor</b><br>
-&nbsp;&nbsp;Linux QGIS3:<b>/home/user_name/.local/share/QGIS/QGIS3/profiles/default/python/plugins/aChor</b>
+&nbsp;&nbsp;Windows QGIS2:&nbsp;&nbsp;<b>C:/Users/user_name/.qgis2/python/plugins/aChor</b><br>
+&nbsp;&nbsp;Linux QGIS2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>/home/user_name/.qgis2/python/plugins/aChor</b><br>
+&nbsp;&nbsp;Windows QGIS3:&nbsp;&nbsp;<b>C:/OSGeo4W/apps/qgis/python/plugins/aChor</b><br>
+&nbsp;&nbsp;Linux QGIS3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp<b>/home/user_name/.local/share/QGIS/QGIS3/profiles/default/python/plugins/aChor</b>
 <p>
 <h3>Before you deploy the plugin:</h3>
 <ul>
@@ -34,7 +34,7 @@ Your default aChor plugin directory is located at:<br>
     <li><b>GitHub</b> for bug report and tracking:
         <a href="https://github.com/Ariel505/aChor/issues/">https://github.com/Ariel505/aChor/issues/</a><br>
     <li>You can also run the classification from <b>OSGeo4W</b> command shell. <br><br>Usage:&nbsp;<br><i>python &nbsp;class_achor.py &nbsp;[class_num] &nbsp;[sweep_interval] &nbsp;[field_name] &nbsp;[shapefile] &nbsp;[method]</i><br>
-	Method: <br><i>1: &nbsp;Localextremes (max and min) <br>2: &nbsp;Localmax <br>3: &nbsp;Localmin</i><br><br>
+	<p style='font-size:.8em;'><i>[Method]: <br>1: &nbsp;Localextremes (max and min) <br>2: &nbsp;Localmax <br>3: &nbsp;Localmin</i></p>
 	for example: <br><i>python &nbsp;class_achor.py &nbsp;10 &nbsp;0.2 &nbsp;SUMME &nbsp;Hamburg.shp &nbsp;1</i>
 	
 	
