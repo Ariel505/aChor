@@ -20,7 +20,7 @@ Your default aChor plugin directory is located at:<br>
     <li>Rtree must be version 0.8.3 or above.
     <li>To install python packages, please using pip or easy_install in OSGEO4W shell.
     <li>Linux: <br><i>sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb </i><br>
-	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>sudo apt install /filedir/python-rtree_0.8.3+ds-1_all.deb</i>
+	<i>sudo apt install /filedir/python-rtree_0.8.3+ds-1_all.deb</i>
     <li>Windows: <i>python -m pip install Rtree-0.8.3-cp36-cp36m-win_amd64.whl</i>
     <li>For windows python packages, you may download them here:<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona">http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona</a>
     <li>Check if libraries successfully installed, open the OSGEO4W shell and try to import them.
@@ -34,7 +34,7 @@ Your default aChor plugin directory is located at:<br>
     <li><b>GitHub</b> for bug report and tracking:
         <a href="https://github.com/Ariel505/aChor/issues/">https://github.com/Ariel505/aChor/issues/</a><br>
     <li>You can also run the classification from <b>OSGeo4W</b> command shell. <br><br>Usage:&nbsp;<br><i>python &nbsp;class_achor.py &nbsp;[class_num] &nbsp;[sweep_interval] &nbsp;[field_name] &nbsp;[shapefile] &nbsp;[method]</i><br>
-	Method: <br>1: Localextremes (max and min) <br>2: Localmax <br>3: Localmin</i><br><br>
+	Method: <br><i>1: &nbsp;Localextremes (max and min) <br>2: &nbsp;Localmax <br>3: &nbsp;Localmin</i><br><br>
 	for example: <br><i>python &nbsp;class_achor.py &nbsp;10 &nbsp;0.2 &nbsp;SUMME &nbsp;Hamburg.shp &nbsp;1</i>
 	
 	
@@ -46,7 +46,7 @@ For more information on aChor project, please visit <a href="http://www.geomatik
 </p>
 </div>
 <p>
-<i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/">(g2lab)</a>, Hafencity University Hamburg
+<i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/">(g2lab)</a>, Hafencity University Hamburg, Germany
 </p>
 </body>
 </html>
