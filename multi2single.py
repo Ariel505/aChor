@@ -58,7 +58,8 @@ def addPolygon(simplePolygon, feature, out_lyr):
     for id in range(feature.GetFieldCount()):
         data = feature.GetField(id)
         out_feat.SetField(id, data)
-    out_feat.SetField(id+1, str(uuid.uuid4().fields[-1])[:6])
+    #out_feat.SetField(id+1, str(uuid.uuid4().fields[-1])[:6])
+    out_feat.SetField(id+1, str(uuid.uuid4().fields[-1]))
     out_lyr.CreateFeature(out_feat)
 
 
