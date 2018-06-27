@@ -10,9 +10,9 @@ This plugin <b>aChor</b> was designed only for polygon shapefile dataset<br>
 <p>
 Your default aChor plugin directory is located at:<br>
 &nbsp;&nbsp;Windows QGIS2:&nbsp;&nbsp;<b>C:/Users/user_name/.qgis2/python/plugins/aChor</b><br>
-&nbsp;&nbsp;Linux QGIS2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>/home/user_name/.qgis2/python/plugins/aChor</b><br>
+&nbsp;&nbsp;Linux QGIS2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>/home/user_name/.qgis2/python/plugins/aChor</b><br>
 &nbsp;&nbsp;Windows QGIS3:&nbsp;&nbsp;<b>C:/OSGeo4W/apps/qgis/python/plugins/aChor</b><br>
-&nbsp;&nbsp;Linux QGIS3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp<b>/home/user_name/.local/share/QGIS/QGIS3/profiles/default/python/plugins/aChor</b>
+&nbsp;&nbsp;Linux QGIS3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>/home/user_name/.local/share/QGIS/QGIS3/profiles/default/python/plugins/aChor</b>
 <p>
 <h3>Before you deploy the plugin:</h3>
 <ul>
