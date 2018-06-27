@@ -33,9 +33,9 @@ Notes:
 <ol>
     <li><b>GitHub</b> for bug report and tracking:
         <a href="https://github.com/Ariel505/aChor/issues/">https://github.com/Ariel505/aChor/issues/</a>
-    <li>You can also run the classification from <b>OSGeo4W</b> command shell. <br>Usage:&nbsp;<i>python class_achor.py [class_num] [sweep_interval] [field_name] [shapefile] [method]</i><br>
-	Method: <i>1: Localextremes (max and min) 2: Localmax 3: Localmin</i><br>
-	for example: <i>python class_achor.py 10 0.2 SUMME Hamburg.shp 1</i>
+    <li>You can also run the classification from <b>OSGeo4W</b> command shell. <br>Usage:&nbsp;<i>python &nbsp;class_achor.py &nbsp;[class_num] &nbsp;[sweep_interval] &nbsp;[field_name] &nbsp;[shapefile] &nbsp;[method]</i><br>
+	Method: <br>1: Localextremes (max and min) <br>2: Localmax <br>3: Localmin</i><br>
+	for example: <br><i>python &nbsp;class_achor.py &nbsp;10 &nbsp;0.2 &nbsp;SUMME &nbsp;Hamburg.shp &nbsp;1</i>
 	
 	
 </ol>
