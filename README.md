@@ -1,7 +1,7 @@
 <html>
 <body>
 <h3>aChor</h3>
-<img src="https://goo.gl/gktLt9" alt="aChor" width="60px;" style="position: absolute;top:20px;right:50px;" align="right" />
+<img src="https://github.com/Ariel505/aChor/blob/master/icon.png?raw=true" alt="aChor" width="60px;" style="position: absolute;top:20px;right:50px;" align="right" />
 Task oriented data classification for choropleth maps (German Research Foundation funded)<br/><br />
 
 <div id='help' style='font-size:.9em;'>
