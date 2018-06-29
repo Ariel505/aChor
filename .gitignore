@@ -104,3 +104,5 @@ ENV/
 
 #ignore wing-ide project files
 *.wpr
+
+.idea/
