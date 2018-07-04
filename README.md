@@ -1,4 +1,5 @@
 <html>
+<head>
 <script>
 var links = document.links;
 for (var i = 0, linksLength = links.length; i < linksLength; i++) {
@@ -7,6 +8,7 @@ for (var i = 0, linksLength = links.length; i < linksLength; i++) {
    } 
 }
 </script>
+</head>
 <body>
 <h3>aChor</h3>
 <img src="https://github.com/Ariel505/aChor/blob/master/icon.png?raw=true" alt="aChor" width="60px;" style="position: absolute;top:20px;right:50px;" align="right" />
