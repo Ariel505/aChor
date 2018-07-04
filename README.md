@@ -48,7 +48,6 @@ https://plugins.qgis.org/plugins/aChor/
 For more information on aChor project, please visit <a href="http://www.geomatik-hamburg.de/g2lab/research-achor.html">aChor  project website</a> for further information.
 </p>
 </div>
-[go](http://stackoverflow.com){:target="_blank"}
 <p>
 <i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/">(g2lab)</a>, Hafencity University Hamburg, Germany
 </p>
