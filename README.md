@@ -40,6 +40,9 @@ Your default aChor plugin directory is located at:<br>
 	
 </ul>
 </div>
+<p style='font-size:.10em;'><b>Official QGIS Plugin Repository - for QGIS2 and QGIS3<a href="https://plugins.qgis.org/plugins/aChor/" target="_blank" alt="aChor QGIS Plugin URL">
+https://plugins.qgis.org/plugins/aChor/
+</a></b></p>
 <div style='font-size:.9em;'>
 <p>
 For more information on aChor project, please visit <a href="http://www.geomatik-hamburg.de/g2lab/research-achor.html">aChor  project website</a> for further information.
