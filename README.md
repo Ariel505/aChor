@@ -6,7 +6,7 @@ Task oriented data classification for choropleth maps (German Research Foundatio
 
 <div id='help' style='font-size:.9em;'>
 This plugin <b>aChor</b> was designed only for polygon shapefile dataset<br>
-&nbsp;&nbsp;You may download a test dataset here:&nbsp;&nbsp;<a href="https://goo.gl/8ixjNn">https://goo.gl/8ixjNn</a><br><br>
+&nbsp;&nbsp;You may download a test dataset here:&nbsp;&nbsp;<a href="https://goo.gl/8ixjNn" target='_blank'>https://goo.gl/8ixjNn</a><br><br>
 <p>
 Your default aChor plugin directory is located at:<br>
 &nbsp;&nbsp;Windows QGIS2:&nbsp;&nbsp;<b>C:/Users/user_name/.qgis2/python/plugins/aChor</b><br>
@@ -22,7 +22,7 @@ Your default aChor plugin directory is located at:<br>
     <li>Linux: <br><i>sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb </i><br>
 	<i>sudo apt install /filedir/python-rtree_0.8.3+ds-1_all.deb</i>
     <li>Windows: <i>python -m pip install Rtree-0.8.3-cp36-cp36m-win_amd64.whl</i>
-    <li>For windows python packages, you may download them here:<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona">http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona</a>
+    <li>For windows python packages, you may download them here:<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona" target='_blank'>http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona</a>
     <li>Check if libraries successfully installed, open the OSGEO4W shell and try to import them.
 	<li>C:\> python<br>
 	&gt;&gt;&gt;&nbsp;import rtree<br>
@@ -40,16 +40,16 @@ Your default aChor plugin directory is located at:<br>
 	
 </ul>
 </div>
-<p style='font-size:.10em;'><b>Official QGIS Plugin Repository - for QGIS2 and QGIS3<a href="https://plugins.qgis.org/plugins/aChor/" target="_blank" alt="aChor QGIS Plugin URL">
+<p style='font-size:.10em;'><b>Official QGIS Plugin Repository - for QGIS2 and QGIS3<a href="https://plugins.qgis.org/plugins/aChor/" target='_blank' title='aChor QGIS Plugin URL'>
 https://plugins.qgis.org/plugins/aChor/
 </a></b></p>
 <div style='font-size:.9em;'>
 <p>
-For more information on aChor project, please visit <a href="http://www.geomatik-hamburg.de/g2lab/research-achor.html">aChor  project website</a> for further information.
+For more information on aChor project, please visit <a href="http://www.geomatik-hamburg.de/g2lab/research-achor.html" target='_blank'>aChor  project website</a> for further information.
 </p>
 </div>
 <p>
-<i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/">(g2lab)</a>, Hafencity University Hamburg, Germany
+<i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/" target='_blank'>(g2lab)</a>, Hafencity University Hamburg, Germany
 </p>
 </body>
 </html>
