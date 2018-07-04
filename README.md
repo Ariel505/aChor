@@ -1,14 +1,4 @@
 <html>
-<head>
-<script>
-var links = document.links;
-for (var i = 0, linksLength = links.length; i < linksLength; i++) {
-   if (links[i].hostname != window.location.hostname) {
-       links[i].target = '_blank';
-   } 
-}
-</script>
-</head>
 <body>
 <h3>aChor</h3>
 <img src="https://github.com/Ariel505/aChor/blob/master/icon.png?raw=true" alt="aChor" width="60px;" style="position: absolute;top:20px;right:50px;" align="right" />
@@ -61,5 +51,6 @@ For more information on aChor project, please visit <a href="http://www.geomatik
 <p>
 <i> License Information, 2018-2021:</i>  Lab for Geoinformatics and Geovisualization <a href="http://www.geomatik-hamburg.de/g2lab/" target='_blank'>(g2lab)</a>, Hafencity University Hamburg, Germany
 </p>
+[Link](https://plugins.qgis.org/plugins/aChor/ "title" target="_blank")
 </body>
 </html>
