@@ -164,6 +164,15 @@ class aChor(object):
         """
         cur.execute(sql_localminpairs)
         
+        sql_hotspotpairs = """
+        CREATE TABLE IF NOT EXISTS "hotspotPairs" (
+            "CenterID" text NOT NULL,
+            min numeric,
+            "Note" text NOT NULL
+        );
+        """
+        cur.execute(sql_hotspotpairs)
+        
         # intersection search and break generation
         sql_linesweep = """
         CREATE TABLE IF NOT EXISTS line_sweep (
@@ -288,31 +297,54 @@ class aChor(object):
                             cond = True
                             minval = objval
                             j += 1
-                            
-                if cond == True and maxval >= objval and j == 0:
-                    db_locmax_insert = [feature['properties'][fid],
-                                        "localmax"]
-                    # if not cur fetchone fehlt!
+                if (self.method <= 3):             
+                    if cond == True and maxval >= objval and j == 0:
+                        db_locmax_insert = [feature['properties'][fid],
+                                            "localmax"]
+                        # if not cur fetchone fehlt!
+                        
+                        cur.execute("""
+                                INSERT INTO locExtreme 
+                                      (PolygonID, Note) 
+                                       VALUES (?, ?);
+                                """, db_locmax_insert)
+                        con.commit()
+                        
+                    if cond == True and minval <= objval and k == 0:
+                        db_locmin_insert = [feature['properties'][fid],
+                                            "localmin"]
+                        
+                        #if not cur fetchone fehlt!
+                        cur.execute("""
+                                INSERT INTO locExtreme 
+                                        (PolygonID, Note) 
+                                        VALUES (?, ?);
+                                """, db_locmin_insert)
+                        con.commit()
+                else:
+                   g_bin = int(feature['properties']['Gi_Bin'])
+                   if (g_bin == 3):
+                       db_hotspot_insert = [feature['properties'][fid],
+                                            "hotspot"]
+                       cur.execute("""
+                                INSERT INTO locExtreme 
+                                        (PolygonID, Note) 
+                                        VALUES (?, ?);
+                                """, db_hotspot_insert)
+                       con.commit()
+                   elif (g_bin == -3):
+                       db_coldspot_insert = [feature['properties'][fid],
+                                            "coldspot"]
+                       cur.execute("""
+                                INSERT INTO locExtreme 
+                                        (PolygonID, Note) 
+                                        VALUES (?, ?);
+                                """, db_coldspot_insert)
+                       con.commit()
+                   
                     
-                    cur.execute("""
-                            INSERT INTO locExtreme 
-                                  (PolygonID, Note) 
-                                   VALUES (?, ?);
-                            """, db_locmax_insert)
-                    con.commit()
-                    
-                if cond == True and minval <= objval and k == 0:
-                    db_locmin_insert = [feature['properties'][fid],
-                                        "localmin"]
-                    
-                    #if not cur fetchone fehlt!
-                    cur.execute("""
-                            INSERT INTO locExtreme 
-                                    (PolygonID, Note) 
-                                    VALUES (?, ?);
-                            """, db_locmin_insert)
-                    con.commit()
-                    
+            source.close()
+            
             print("Finish neighborsearch")
         
     def selection(self):
@@ -325,64 +357,92 @@ class aChor(object):
         print("Selecting significance sorted center-neighbor-polygon pairs...")
 
         # sql statement for locExtreme
-        sql_localextreme = """
-        SELECT  nb."CenterID", MIN(ABS(nb."Difference")), loc."Note" 
-              FROM "neighborPairs" nb, "locExtreme" loc
-              WHERE nb."CenterID" = loc."PolygonID" and  ABS(nb."Difference") > {}
-              GROUP by nb."CenterID", loc."Note"
-              ORDER by  MIN(ABS(nb."Difference")) DESC
-        """.format(self.swp)
-        cur.execute(sql_localextreme)
-        db_selection_localextreme = [row for row in cur.fetchall()]
-
-        cur.execute("SELECT * FROM locExtremePairs")
-        if not cur.fetchone():        
-            cur.executemany("""
-            INSERT INTO locExtremePairs (CenterID, min, Note)
-                  VALUES (?, ?, ?);""", (db_selection_localextreme))
-            con.commit()
+        if (self.method == 1):
+            sql_localextreme = """
+            SELECT  nb."CenterID", MIN(ABS(nb."Difference")), loc."Note" 
+                  FROM "neighborPairs" nb, "locExtreme" loc
+                  WHERE nb."CenterID" = loc."PolygonID" and  ABS(nb."Difference") > {}
+                  GROUP by nb."CenterID", loc."Note"
+                  ORDER by  MIN(ABS(nb."Difference")) DESC
+            """.format(self.swp)
+            cur.execute(sql_localextreme)
+            db_selection_localextreme = [row for row in cur.fetchall()]
+    
+            cur.execute("SELECT * FROM locExtremePairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                INSERT INTO locExtremePairs (CenterID, min, Note)
+                      VALUES (?, ?, ?);""", (db_selection_localextreme))
+                con.commit()
 
     ################################################################################            
 
-        # sql statement for localmax    
-        sql_localmax = """
-        SELECT nb."CenterID", MIN(nb."Difference"), loc."Note"
-              FROM "neighborPairs" nb, "locExtreme" loc
-              WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" > {}
-              GROUP BY nb."CenterID", loc."Note"
-              ORDER BY MIN(nb."Difference") DESC;
-        """.format(self.swp)
-        cur.execute(sql_localmax)
-        db_selection_localmax = [row for row in cur.fetchall()]
-
-        cur.execute("SELECT * FROM locmaxpairs")
-        if not cur.fetchone():        
-            cur.executemany("""
-                INSERT INTO locmaxPairs (CenterID, min, Note)
-                      VALUES (?, ?, ?);""", (db_selection_localmax))
-            con.commit()
+        # sql statement for localmax 
+        elif (self.method == 2):
+            sql_localmax = """
+            SELECT nb."CenterID", MIN(nb."Difference"), loc."Note"
+                  FROM "neighborPairs" nb, "locExtreme" loc
+                  WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" > {}
+                  GROUP BY nb."CenterID", loc."Note"
+                  ORDER BY MIN(nb."Difference") DESC;
+            """.format(self.swp)
+            cur.execute(sql_localmax)
+            db_selection_localmax = [row for row in cur.fetchall()]
+    
+            cur.execute("SELECT * FROM locmaxpairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO locmaxPairs (CenterID, min, Note)
+                          VALUES (?, ?, ?);""", (db_selection_localmax))
+                con.commit()
 
     ################################################################################
 
         # sql statement for locmin
-        sql_localmin = """
-        SELECT nb."CenterID", MAX(nb."Difference"), loc."Note" 
-              FROM "neighborPairs" nb, "locExtreme" loc
-              WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" < {}
-              GROUP BY nb."CenterID", loc."Note"
-              ORDER BY MAX(nb."Difference") ASC;
-        """.format(self.swp)
-        cur.execute(sql_localmin)
-        db_selection_localmin = [row for row in cur.fetchall()]
+        elif (self.method == 3):
+            sql_localmin = """
+            SELECT nb."CenterID", MAX(nb."Difference"), loc."Note" 
+                  FROM "neighborPairs" nb, "locExtreme" loc
+                  WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" < {}
+                  GROUP BY nb."CenterID", loc."Note"
+                  ORDER BY MAX(nb."Difference") ASC;
+            """.format(self.swp)
+            cur.execute(sql_localmin)
+            db_selection_localmin = [row for row in cur.fetchall()]
+    
+    
+            cur.execute("SELECT * FROM locminpairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO locminPairs (CenterID, min, Note)
+                          VALUES (?, ?, ?);""", (db_selection_localmin))
+                con.commit()
+        
+    ################################################################################
 
-
-        cur.execute("SELECT * FROM locminpairs")
-        if not cur.fetchone():        
-            cur.executemany("""
-                INSERT INTO locminPairs (CenterID, min, Note)
-                      VALUES (?, ?, ?);""", (db_selection_localmin))
-            con.commit()
-            
+        # sql statement for hotspot
+        elif (self.method == 4):
+            sql_hotspot = """
+            SELECT DISTINCT nb."CenterID", ABS(nb."Difference"),loc."Note"
+                  FROM "neighborPairs" nb, "locExtreme" loc
+                  WHERE nb."CenterID" = loc."PolygonID" and ABS(nb."Difference") > {}
+                  AND NOT (nb."PolygonID" IN (select loc."PolygonID" from "locExtreme" loc))
+                  GROUP BY nb."CenterID", nb."Difference", loc."Note"
+                  ORDER BY ABS(nb."Difference") DESC;
+            """.format(self.swp)
+            cur.execute(sql_hotspot)
+            db_selection_hotspot = [row for row in cur.fetchall()]
+    
+    
+            cur.execute("SELECT * FROM hotspotpairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO hotspotPairs (CenterID, min, Note)
+                          VALUES (?, ?, ?);""", (db_selection_hotspot))
+                con.commit()
+        
+    ################################################################################
+        
         print("Finish selection.\nStarting sweep and generate breaks...")
         
     def linesweep(self):
@@ -438,6 +498,15 @@ class aChor(object):
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                  con.commit()
+            if self.method == 4:
+                 cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "hotspotPairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min"=ABS(nb."Difference")
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                 con.commit()
+            
 
         cur.execute("SELECT rowid, centerid, polygonid, center, neighbor, min, note FROM line_sweep")
         data = cur.fetchall()
@@ -605,7 +674,7 @@ if __name__ == "__main__":
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
-    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin', type=int)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
     args = parser.parse_args()
 

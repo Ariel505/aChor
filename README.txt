@@ -15,7 +15,7 @@ Your default aChor plugin directory is located at:
 
 Before you deploy the plugin:
 
-•This plugin using fiona, shapely and Rtree libraries. 
+•This plugin using fiona, shapely, gdal, pysal and Rtree libraries. 
 •Rtree must be version 0.8.3 or above. 
 •To install python packages, please using pip or easy_install in OSGEO4W shell. 
 •Linux: sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb 
@@ -33,7 +33,7 @@ Notes:
 2.You can also run the classification from OSGeo4W command shell. 
 
 Usage: python class_achor.py [class_num] [sweep_interval] [field_name] [shapefile] [method]
-       method: 1: Localextremes (max and min) 2: Localmax 3: Localmin
+       method: 1: Localextremes (max and min) 2: Localmax 3: Localmin 4: Hotspot
 for example: python class_achor.py 10 0.2 SUMME Hamburg.shp 1 
 
 
