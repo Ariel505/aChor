@@ -715,7 +715,10 @@ class aChor:
                 myVectorLayer.triggerRepaint()
                 rcsv.close()
                 os.remove(csvfile)
-                os.remove(shp)
+                filelist = [ f for f in os.listdir(strdir+"/test/") if f.startswith("hotspotshp") ]
+                for f in filelist:
+                    os.remove(os.path.join(strdir+"/test/", f))
+                #os.remove(shp)
                 shutil.rmtree(self.plugin_dir+"/tmp")
                 print("log: aChor Classification Success")
                 QMessageBox.information(self.dlg.show(), self.tr("aChor:Result"),
