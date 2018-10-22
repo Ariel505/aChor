@@ -6,7 +6,7 @@ Task oriented data classification for choropleth maps (German Research Foundatio
 
 <div id='help' style='font-size:.9em;'>
 This plugin <b>aChor</b> was designed only for polygon shapefile dataset<br>
-&nbsp;&nbsp;You may download a test dataset here:&nbsp;&nbsp;<a href="https://goo.gl/8ixjNn" target='_blank'>https://goo.gl/8ixjNn</a><br><br>
+&nbsp;&nbsp;You may download a test dataset here:&nbsp;&nbsp;<a href="http://tiny.cc/xspc0y" target='_blank'>http://tiny.cc/xspc0y</a><br><br>
 <p>
 Your default aChor plugin directory is located at:<br>
 &nbsp;&nbsp;Windows QGIS2:&nbsp;&nbsp;<b>C:/Users/user_name/.qgis2/python/plugins/aChor</b><br>
