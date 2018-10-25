@@ -28,7 +28,8 @@ Your default aChor plugin directory is located at:<br>
 	<li>C:\> python<br>
 	&gt;&gt;&gt;&nbsp;import rtree<br>
 	&gt;&gt;&gt;&nbsp;import fiona<br>
-	&gt;&gt;&gt;&nbsp;import shapely
+	&gt;&gt;&gt;&nbsp;import shapely<br>
+	&gt;&gt;&gt;&nbsp;import pysal
 </ul>
 <h3>Notes:</h3>
 <ul>
