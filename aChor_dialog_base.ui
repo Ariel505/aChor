@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Task-oriented data classification for polygon</string>
+   <string>Task-oriented data classification for polygons</string>
   </property>
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
@@ -279,6 +279,19 @@
    </property>
    <property name="text">
     <string>Meter (project unit)</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rdb5">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>120</y>
+     <width>131</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Neighbors</string>
    </property>
   </widget>
  </widget>

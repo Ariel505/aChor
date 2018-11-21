@@ -11,6 +11,7 @@ from decimal import *
 class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
     values and generates breaks according to these"""
+
     
     def version_check(method):
         """A wrapper for checking the current python environment version for
@@ -28,6 +29,7 @@ class aChor(object):
     def __init__(self, cls, swp, field, shp, method=1, memory=None):
         
         self.cls = int(cls)
+        self.brk_num = int(cls)-1
         self.swp = float(swp)
         self.field = str(field)
         self.shp = str(shp)
@@ -41,8 +43,8 @@ class aChor(object):
             
         global con
         global cur
-        
         con = sql.connect(self.memory)
+        #con = sql.connect("achor.db")
         cur = con.cursor()
         cur.execute("PRAGMA synchronous = OFF")
         cur.execute("PRAGMA journal_mode = MEMORY")
@@ -66,19 +68,25 @@ class aChor(object):
         
         writer = csv.writer(fout, delimiter=",")
         brks = []
-        for i in range(0,self.cls-1):
-            temp = self.breaks()
-            print("Classes: {}, Breakvalue: {}".format(i+2, temp[0]))
-            if temp[1] == True:
-                brks.append(temp[0])
-                brks = self.desired_breaks(brks, self.cls-1)
+        # create custom counters with distinct initial values for display
+        brk_counter = 1 # we start with initally 1 break
+        cls_counter = 2 # and with 1 break you alread have 2 classes
+        for i in range(0, self.brk_num):            
+            brk_val, no_segment_left = self.breaks()
+            print("Class: {}, Breakvalue: {}".format(cls_counter, brk_val))
+            if no_segment_left == True and not brk_counter == self.brk_num:
+                print("No segments left in database")
+                brks.append(brk_val)
+                brks = self.desired_breaks(brks, self.brk_num)
                 break
-            brks.append(temp[0])
+            brks.append(brk_val)
+            cls_counter += 1
+            brk_counter += 1
         else: 
-            print("{} breaks/{} classes generated.".format(self.cls-1,self.cls))     
-        [writer.writerow([brk]) for brk in brks]        
+            print("{} breaks/{} classes generated.".format(self.brk_num, self.cls))     
+        [writer.writerow([brk]) for brk in brks]     
 
-    def desired_breaks(self, brks, cls):
+    def desired_breaks(self, brks, brk_num):
         """Creates breaks up to the desired class amount
         
         After the linesweep has finished it is possible, that the created breaks
@@ -95,16 +103,20 @@ class aChor(object):
         temp_brks = sorted(brks, reverse=True)
         brks_diff = sorted(((i-j, i, j) for i, j in zip(temp_brks, temp_brks[1:])), reverse=True)
         i = 0
+        brk_counter = len(brks) # get the number of already created breaks
+        cls_counter = brk_counter + 1 # existing breaks + 1 yields class amount
         while len(brks) < (len(temp_brks)*2)-1:
             residual_brk = ( brks_diff[i][1] + brks_diff[i][2] ) / 2
-            brks.append(residual_brk) 
+            brks.append(residual_brk)
             i += 1
-            print("Classes: {}, Breakvalue: {}".format(len(brks)+1, residual_brk))
-            if len(brks) == cls:
-                print("{} breaks/{} classes generated.".format(len(brks), cls+1))
+            brk_counter += 1
+            cls_counter += 1
+            print("Class: {}, Breakvalue: {}".format(cls_counter, residual_brk))
+            if len(brks) == brk_num:
+                print("{} breaks/{} classes generated.".format(self.brk_num, self.cls))
                 return brks
                 
-        return self.desired_breaks(brks, cls)
+        return self.desired_breaks(brks, brk_num)
         
     def db(self):
         """Creates necessary tables in the database"""
@@ -207,7 +219,6 @@ class aChor(object):
         
         print("Starting neighbor search...")
         
-        #plugin_dir_qgis = os.path.join(os.path.expanduser("~"), '.local/share/QGIS/QGIS3/profiles/default/python/plugins/achor')
         if not os.path.dirname(scriptname):
             plugin_dir_qgis = os.getcwd()
         else:
@@ -266,7 +277,7 @@ class aChor(object):
                         subval = round(otherfeature['properties'][val],4)
                         distance = round((geometry.centroid.distance(othergeometry.centroid)),3)
                         diff = round((objval-subval),4)
-                        
+                        # Local Extreme method
                         db_neighborpairs_insert = [feature['properties'][fid],
                                                    otherfeature['properties'][fid],
                                                    objval,
@@ -322,30 +333,52 @@ class aChor(object):
                                 """, db_locmin_insert)
                         con.commit()
                 else:
-                   g_bin = int(feature['properties']['Gi_Bin'])
-                   if (g_bin == 3):
-                       db_hotspot_insert = [feature['properties'][fid],
-                                            "hotspot"]
-                       cur.execute("""
-                                INSERT INTO locExtreme 
-                                        (PolygonID, Note) 
-                                        VALUES (?, ?);
-                                """, db_hotspot_insert)
-                       con.commit()
-                   elif (g_bin == -3):
-                       db_coldspot_insert = [feature['properties'][fid],
-                                            "coldspot"]
-                       cur.execute("""
-                                INSERT INTO locExtreme 
-                                        (PolygonID, Note) 
-                                        VALUES (?, ?);
-                                """, db_coldspot_insert)
-                       con.commit()
-                   
+                   # Hotspot method
+                   if (self.method == 4):
+                       g_bin = int(feature['properties']['Gi_Bin'])
+                       if (g_bin == 3):
+                           db_hotspot_insert = [feature['properties'][fid],
+                                                "hotspot"]
+                           cur.execute("""
+                                    INSERT INTO locExtreme 
+                                            (PolygonID, Note) 
+                                            VALUES (?, ?);
+                                    """, db_hotspot_insert)
+                           con.commit()
+                       elif (g_bin == -3):
+                           db_coldspot_insert = [feature['properties'][fid],
+                                                "coldspot"]
+                           cur.execute("""
+                                    INSERT INTO locExtreme 
+                                            (PolygonID, Note) 
+                                            VALUES (?, ?);
+                                    """, db_coldspot_insert)
+                           con.commit()                
                     
             source.close()
             
-            print("Finish neighborsearch")
+            # Neighours method
+            if (self.method == 5):
+                cur.execute("""
+                        SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
+                        where ABS(nb."Difference") > {}
+                        group by CenterID order by ABS(nb."Difference") DESC limit 500;
+                        """.format(self.swp))
+                db_neighbors_insert = [row for row in cur.fetchall()]
+                cur.execute("SELECT * FROM locExtreme")
+                if not cur.fetchone():        
+                   cur.executemany("""
+                                    INSERT INTO locExtreme 
+                                            (PolygonID, Note) 
+                                            VALUES (?, ?);
+                                    """, db_neighbors_insert)
+                   con.commit()
+                cur.execute("""
+                            update "locExtreme"
+                            set "Note" = "neighbors";
+                            """)
+                con.commit()
+            print("Finish neighborsearch, method: " + str(self.method))
         
     def selection(self):
         """Creates a selection of signifcant Center-Neighbor Pairs 
@@ -380,11 +413,11 @@ class aChor(object):
         # sql statement for localmax 
         elif (self.method == 2):
             sql_localmax = """
-            SELECT nb."CenterID", MIN(nb."Difference"), loc."Note"
+            SELECT nb."CenterID", MIN(ABS(nb."Difference")), loc."Note"
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" > {}
                   GROUP BY nb."CenterID", loc."Note"
-                  ORDER BY MIN(nb."Difference") DESC;
+                  ORDER BY MAX(nb."Difference") DESC;
             """.format(self.swp)
             cur.execute(sql_localmax)
             db_selection_localmax = [row for row in cur.fetchall()]
@@ -401,11 +434,11 @@ class aChor(object):
         # sql statement for locmin
         elif (self.method == 3):
             sql_localmin = """
-            SELECT nb."CenterID", MAX(nb."Difference"), loc."Note" 
+            SELECT nb."CenterID", MIN(ABS(nb."Difference")), loc."Note" 
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" < {}
                   GROUP BY nb."CenterID", loc."Note"
-                  ORDER BY MAX(nb."Difference") ASC;
+                  ORDER BY MIN(nb."Difference") ASC;
             """.format(self.swp)
             cur.execute(sql_localmin)
             db_selection_localmin = [row for row in cur.fetchall()]
@@ -439,6 +472,28 @@ class aChor(object):
                 cur.executemany("""
                     INSERT INTO hotspotPairs (CenterID, min, Note)
                           VALUES (?, ?, ?);""", (db_selection_hotspot))
+                con.commit()
+        
+    ################################################################################
+    
+        # sql statement for neighbors
+        elif (self.method == 5):
+            sql_neighbors = """
+            SELECT nb."CenterID", ABS(nb."Difference"), loc."Note" 
+                  FROM "neighborPairs" nb, "locExtreme" loc
+                  WHERE nb."CenterID" = loc."PolygonID" and ABS(nb."Difference") > {}
+                  GROUP by nb."CenterID", loc."Note"
+                  ORDER by MAX(nb."Difference") DESC;
+            """.format(self.swp)
+            cur.execute(sql_neighbors)
+            db_selection_neighbors = [row for row in cur.fetchall()]
+    
+    
+            cur.execute("SELECT * FROM locExtremePairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO locExtremePairs (CenterID, min, Note)
+                          VALUES (?, ?, ?);""", (db_selection_neighbors))
                 con.commit()
         
     ################################################################################
@@ -478,23 +533,23 @@ class aChor(object):
                 cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
                                         FROM "locExtremePairs" loc, "neighborPairs" nb
-                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference")
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min"=ABS(nb."Difference")
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                 con.commit()
             if self.method == 2:
                  cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
-                                        FROM "locExtremePairs" loc, "neighborPairs" nb
-                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference") and loc."Note"="localmax"
+                                        FROM "locmaxPairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min"=ABS(nb."Difference") and loc."Note"="localmax"
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                  con.commit()
             if self.method == 3:
                  cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
-                                        FROM "locExtremePairs" loc, "neighborPairs" nb
-                                        WHERE loc."CenterID" = nb."CenterID" and  loc."min"=ABS(nb."Difference") and loc."Note"="localmin"
+                                        FROM "locminPairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min"=ABS(nb."Difference") and loc."Note"="localmin"
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                  con.commit()
@@ -502,11 +557,18 @@ class aChor(object):
                  cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
                                         FROM "hotspotPairs" loc, "neighborPairs" nb
-                                        WHERE loc."CenterID" = nb."CenterID" and loc."min"=ABS(nb."Difference")
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min" = ABS(nb."Difference")
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                  con.commit()
-            
+            if self.method == 5:
+                cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min" = ABS(nb."Difference")
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                con.commit()
 
         cur.execute("SELECT rowid, centerid, polygonid, center, neighbor, min, note FROM line_sweep")
         data = cur.fetchall()
@@ -529,9 +591,11 @@ class aChor(object):
         # dataset parameters for intersection search
         minval = min(vals)
         maxval = max(vals)
-        
+
+            
         min_dif = self.swp
         
+
         # intersection search
         sweep = minval # set starting point for iteration
         
@@ -547,9 +611,9 @@ class aChor(object):
             match_segments = [segment[0] for i, segment in enumerate(segments) 
                                 if segment[1].contains(Point(sweep, i+1))]
             
-            sweep += min_dif
-            
             intersection.append((len(match_segments), round(sweep,2), [x for x in match_segments]))
+            
+            sweep += min_dif            
             
         if sys.version_info.major < 3:
             to_db = [(intersection[i][0], 
@@ -656,13 +720,14 @@ class aChor(object):
             cur.execute("SELECT * FROM line_sweep")
             if not cur.fetchone():
                 return (round(residual_brk_val, 2),True)
-
-            self.linesweep()
+            else:
+                self.linesweep()
 
             return (round(residual_brk_val, 2),False)
         # after removing the previously evaluated line segments run the line 
         # sweep again
-        self.linesweep()
+        else:
+            self.linesweep()
 
         return (round(break_val,2),False)        
 
@@ -674,7 +739,7 @@ if __name__ == "__main__":
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
-    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot', type=int)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
     args = parser.parse_args()
 
@@ -685,6 +750,6 @@ if __name__ == "__main__":
     shp = args.shp
     output = args.output  
     start = time.time()
-    aChor(cls, swp, field, shp, 1 if not method else method, 1 if output else 0)
+    aChor(cls, swp, field, shp, 1 if not method else method, 0 if output else 0)
     print("Execution time: {}s".format(round(time.time()-start)))
     
