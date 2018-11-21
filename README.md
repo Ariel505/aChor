@@ -36,7 +36,7 @@ Your default aChor plugin directory is located at:<br>
     <li><b>GitHub</b> for bug report and tracking:
         <a href="https://github.com/Ariel505/aChor/issues/">https://github.com/Ariel505/aChor/issues/</a><br>
     <li>You can also run the classification from <b>OSGeo4W</b> command shell. <br><br>Usage:&nbsp;<br><i>python &nbsp;class_achor.py &nbsp;[class_num] &nbsp;[sweep_interval] &nbsp;[field_name] &nbsp;[shapefile] &nbsp;[method]</i><br>
-	<p style='font-size:.8em;'><i>[Method]: <br>1: &nbsp;Localextremes (max and min) <br>2: &nbsp;Localmax <br>3: &nbsp;Localmin <br>4: &nbsp;Hotspot and coldspot</i></p>
+	<p style='font-size:.8em;'><i>[Method]: <br>1: &nbsp;Localextremes (max and min) <br>2: &nbsp;Localmax <br>3: &nbsp;Localmin <br>4: &nbsp;Hotspot and coldspot</i><br>5: &nbsp;Neighbors</i></p>
 	for example: <br><i>python &nbsp;class_achor.py &nbsp;10 &nbsp;0.2 &nbsp;SUMME &nbsp;Hamburg.shp &nbsp;1</i>
 	
 	
