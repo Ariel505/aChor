@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>point02.kml</name>
+	<Schema name="point02" id="point02">
+		<SimpleField type="float" name="id"></SimpleField>
+		<SimpleField type="float" name="CX"></SimpleField>
+		<SimpleField type="float" name="CY"></SimpleField>
+	</Schema>
+	<StyleMap id="default">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#default0</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#hl</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="hl">
+		<IconStyle>
+			<scale>1.2</scale>
+			<Icon>
+				<href>stops.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+	<Style id="default0">
+		<IconStyle>
+			<Icon>
+				<href>stops.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+		<Style id="h2">
+		<IconStyle>
+			<scale>1.2</scale>
+			<Icon>
+				<href>goal.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+	<Folder>
+		<name>point02</name>
+		<open>1</open>
+		<Placemark>
+			<name>11</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">11</SimpleData>
+					<SimpleData name="CX">10.008792040766577</SimpleData>
+					<SimpleData name="CY">53.556666083544783</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0087920407666,53.5566660835448,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>12</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">12</SimpleData>
+					<SimpleData name="CX">10.009291705311011</SimpleData>
+					<SimpleData name="CY">53.557301449357759</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.009291705311,53.5573014493578,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>13</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">13</SimpleData>
+					<SimpleData name="CX">10.011232195572203</SimpleData>
+					<SimpleData name="CY">53.558457524417676</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0112321955722,53.55845752441771,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>14</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">14</SimpleData>
+					<SimpleData name="CX">10.012908933813156</SimpleData>
+					<SimpleData name="CY">53.559601808225459</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0129089338132,53.5596018082255,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>15</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">15</SimpleData>
+					<SimpleData name="CX">10.013353459012432</SimpleData>
+					<SimpleData name="CY">53.559899412228106</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0133534590124,53.5598994122281,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>16</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">16</SimpleData>
+					<SimpleData name="CX">10.013535006289640</SimpleData>
+					<SimpleData name="CY">53.560269007590904</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0135350062896,53.5602690075909,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>17</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">17</SimpleData>
+					<SimpleData name="CX">10.014401427970535</SimpleData>
+					<SimpleData name="CY">53.560745247297177</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0144014279705,53.5607452472972,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>10</name>
+			<styleUrl>#h2</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#point02">
+					<SimpleData name="id">10</SimpleData>
+					<SimpleData name="CX">10.007438490869244</SimpleData>
+					<SimpleData name="CY">53.555730785367558</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0074384908692,53.5557307853676,0</coordinates>
+			</Point>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>
