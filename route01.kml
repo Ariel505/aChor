@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>route01.kml</name>
+	<Schema name="route01" id="route01">
+		<SimpleField type="float" name="id"></SimpleField>
+		<SimpleField type="float" name="RouteLÃ¤ng"></SimpleField>
+	</Schema>
+	<StyleMap id="stylemap_id0">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#style</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#style0</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="style">
+		<LineStyle>
+			<color>ffffaa55</color>
+			<width>4</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Style id="style0">
+		<LineStyle>
+			<color>ffffaa55</color>
+			<width>4</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Placemark>
+		<name>route01</name>
+		<styleUrl>#stylemap_id0</styleUrl>
+		<ExtendedData>
+			<SchemaData schemaUrl="#route01">
+				<SimpleData name="id">2</SimpleData>
+				<SimpleData name="RouteLÃ¤ng">727</SimpleData>
+			</SchemaData>
+		</ExtendedData>
+		<MultiGeometry>
+			<LineString>
+				<coordinates>
+					10.0081358099884,53.5551333798448,0 10.0087231070364,53.5555426550272,0 10.0087957921847,53.55562804219911,0 10.0110656600303,53.5573460443613,0 10.0131357171,53.5589128151002,0 10.0132907728217,53.5590853333647,0 10.0143325110361,53.5599109718318,0 10.0146888531052,53.56035897415219,0 
+				</coordinates>
+			</LineString>
+		</MultiGeometry>
+	</Placemark>
+</Document>
+</kml>

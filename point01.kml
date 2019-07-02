@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="root_doc">
+	<name>route20.kml</name>
+	<open>1</open>
+	<Schema name="route20" id="route20">
+		<SimpleField type="float" name="id"></SimpleField>
+		<SimpleField type="float" name="CX"></SimpleField>
+		<SimpleField type="float" name="CY"></SimpleField>
+	</Schema>
+	<StyleMap id="default">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#default0</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#hl</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="hl">
+		<IconStyle>
+			<scale>1.2</scale>
+			<Icon>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/goal.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+	<Style id="default0">
+		<IconStyle>
+			<Icon>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/stops.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+		<Style id="h2">
+		<IconStyle>
+			<scale>1.2</scale>
+			<Icon>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/goal.png</href>
+			</Icon>
+			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+		</IconStyle>
+		<ListStyle>
+		</ListStyle>
+	</Style>
+	<Folder>
+		<name>route20</name>
+		<open>1</open>
+		<Placemark>
+			<name>21</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">21</SimpleData>
+					<SimpleData name="CX">10.009558470598291</SimpleData>
+					<SimpleData name="CY">53.556307330835509</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0095584705983,53.55630733083549,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>22</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">22</SimpleData>
+					<SimpleData name="CX">10.010197199199485</SimpleData>
+					<SimpleData name="CY">53.556499205514861</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0101971991995,53.5564992055149,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>23</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">23</SimpleData>
+					<SimpleData name="CX">10.012014665444195</SimpleData>
+					<SimpleData name="CY">53.558112275425046</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0120146654442,53.55811227542501,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>24</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">24</SimpleData>
+					<SimpleData name="CX">10.012383687371875</SimpleData>
+					<SimpleData name="CY">53.558388443786562</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0123836873719,53.5583884437866,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>25</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">25</SimpleData>
+					<SimpleData name="CX">10.012608817081921</SimpleData>
+					<SimpleData name="CY">53.558573416646809</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0126088170819,53.55857341664681,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>26</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">26</SimpleData>
+					<SimpleData name="CX">10.014373114612450</SimpleData>
+					<SimpleData name="CY">53.559779679077195</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0143731146125,53.5597796790772,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>27</name>
+			<styleUrl>#default</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">27</SimpleData>
+					<SimpleData name="CX">10.014686853616157</SimpleData>
+					<SimpleData name="CY">53.560359526711203</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0146868536162,53.5603595267112,0</coordinates>
+			</Point>
+		</Placemark>
+		<Placemark>
+			<name>20</name>
+			<styleUrl>#h2</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#route20">
+					<SimpleData name="id">20</SimpleData>
+					<SimpleData name="CX">10.008135061515116</SimpleData>
+					<SimpleData name="CY">53.555129335243116</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<coordinates>10.0081350615151,53.55512933524311,0</coordinates>
+			</Point>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>
