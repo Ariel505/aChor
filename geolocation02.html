@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geolocation</title>
+	 <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">	
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/latest/examples/css/ol.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/latest/examples/resources/layout.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/v5.3.0/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+	<style>
+      html, body, .map {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+		.track {
+          position: absolute;
+          bottom: 40px;
+          left: 10px;
+		  background-color: lightgrey;
+      }
+	    #info {
+          position: absolute;
+          font-size: 0.7em;
+          bottom: 15px;
+          right: 10px;
+          background-color: lightgrey;
+          padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info" style="display: none;"></div>
+    <label for="track" class="track">
+      track position
+      <input id="track" type="checkbox"/>
+    </label>
+    <div id="info">
+      position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;
+      altitude : <code id="altitude"></code>&nbsp;&nbsp;
+      altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;
+      heading : <code id="heading"></code>&nbsp;&nbsp;
+      speed : <code id="speed"></code>
+    </div>
+	<script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
+    <script>
+	  var vector = new ol.layer.Vector({
+	    source: new ol.source.Vector({
+        url: 'https://raw.githubusercontent.com/Ariel505/aChor/master/route02.kml',
+        format: new ol.format.KML()
+		})
+	  });
+	  
+	  var points = new ol.layer.Vector({
+	    source: new ol.source.Vector({
+        url: 'https://raw.githubusercontent.com/Ariel505/aChor/master/point02.kml',
+        format: new ol.format.KML()
+		})
+	  });
+	  
+      var view = new ol.View({
+       center: ol.proj.fromLonLat([10.007438490869244, 53.5557307]),
+        zoom: 17,
+		rotation:-0.7,
+      });
+
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ,vector, points],
+        target: 'map',
+        view: view
+      });
+
+      var geolocation = new ol.Geolocation({
+        // enableHighAccuracy must be set to true to have the heading value.
+        trackingOptions: {
+		  maximumAge: 10000,
+          enableHighAccuracy: true,
+		  timeout: 600000
+        },
+        projection: view.getProjection()
+      });
+
+      function el(id) {
+        return document.getElementById(id);
+      }
+
+      el('track').addEventListener('change', function() {
+        geolocation.setTracking(this.checked);
+      });
+
+      // update the HTML page when the position changes.
+      geolocation.on('change', function() {
+        el('accuracy').innerText = geolocation.getAccuracy() + ' [m]';
+        el('altitude').innerText = geolocation.getAltitude() + ' [m]';
+        el('altitudeAccuracy').innerText = geolocation.getAltitudeAccuracy() + ' [m]';
+        el('heading').innerText = geolocation.getHeading() + ' [rad]';
+        el('speed').innerText = geolocation.getSpeed() + ' [m/s]';
+      });
+
+      // handle geolocation error.
+      geolocation.on('error', function(error) {
+        var info = document.getElementById('info');
+        info.innerHTML = error.message;
+        info.style.display = '';
+      });
+
+      var accuracyFeature = new ol.Feature();
+      geolocation.on('change:accuracyGeometry', function() {
+        accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
+      });
+
+      var positionFeature = new ol.Feature();
+      positionFeature.setStyle(new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 5,
+          fill: new ol.style.Fill({
+            color: '#3399CC'
+          }),
+          stroke: new ol.style.Stroke({
+            color: '#fff',
+            width: 2
+          })
+        })
+      }));
+
+      geolocation.on('change:position', function() {
+        var coordinates = geolocation.getPosition();
+        positionFeature.setGeometry(coordinates ?
+          new ol.geom.Point(coordinates) : null);
+      });
+
+      new ol.layer.Vector({
+        map: map,
+        source: new ol.source.Vector({
+          features: [accuracyFeature, positionFeature]
+        })
+      });
+    </script>
+  </body>
+</html>
