@@ -42,7 +42,7 @@
 		<IconStyle>
 			<scale>1.2</scale>
 			<Icon>
-				<href>goal.png</href>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/goal.png</href>
 			</Icon>
 			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
 		</IconStyle>
