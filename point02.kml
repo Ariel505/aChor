@@ -21,7 +21,7 @@
 		<IconStyle>
 			<scale>1.2</scale>
 			<Icon>
-				<href>stops.png</href>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/goal.png</href>
 			</Icon>
 			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
 		</IconStyle>
@@ -31,7 +31,7 @@
 	<Style id="default0">
 		<IconStyle>
 			<Icon>
-				<href>stops.png</href>
+				<href>https://raw.githubusercontent.com/Ariel505/aChor/master/stops.png</href>
 			</Icon>
 			<hotSpot x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
 		</IconStyle>
