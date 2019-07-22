@@ -51,21 +51,7 @@
 	</Style>
 	<Folder>
 		<name>point02</name>
-		<open>1</open>
-		<Placemark>
-			<name>11</name>
-			<styleUrl>#default</styleUrl>
-			<ExtendedData>
-				<SchemaData schemaUrl="#point02">
-					<SimpleData name="id">11</SimpleData>
-					<SimpleData name="CX">10.008792040766577</SimpleData>
-					<SimpleData name="CY">53.556666083544783</SimpleData>
-				</SchemaData>
-			</ExtendedData>
-			<Point>
-				<coordinates>10.0087920407666,53.5566660835448,0</coordinates>
-			</Point>
-		</Placemark>
+		<open>1</open>		
 		<Placemark>
 			<name>12</name>
 			<styleUrl>#default</styleUrl>
@@ -79,21 +65,7 @@
 			<Point>
 				<coordinates>10.009291705311,53.5573014493578,0</coordinates>
 			</Point>
-		</Placemark>
-		<Placemark>
-			<name>13</name>
-			<styleUrl>#default</styleUrl>
-			<ExtendedData>
-				<SchemaData schemaUrl="#point02">
-					<SimpleData name="id">13</SimpleData>
-					<SimpleData name="CX">10.011232195572203</SimpleData>
-					<SimpleData name="CY">53.558457524417676</SimpleData>
-				</SchemaData>
-			</ExtendedData>
-			<Point>
-				<coordinates>10.0112321955722,53.55845752441771,0</coordinates>
-			</Point>
-		</Placemark>
+		</Placemark>		
 		<Placemark>
 			<name>14</name>
 			<styleUrl>#default</styleUrl>
