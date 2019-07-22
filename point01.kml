@@ -54,20 +54,6 @@
 		<name>route20</name>
 		<open>1</open>
 		<Placemark>
-			<name>21</name>
-			<styleUrl>#default</styleUrl>
-			<ExtendedData>
-				<SchemaData schemaUrl="#route20">
-					<SimpleData name="id">21</SimpleData>
-					<SimpleData name="CX">10.009558470598291</SimpleData>
-					<SimpleData name="CY">53.556307330835509</SimpleData>
-				</SchemaData>
-			</ExtendedData>
-			<Point>
-				<coordinates>10.0095584705983,53.55630733083549,0</coordinates>
-			</Point>
-		</Placemark>
-		<Placemark>
 			<name>22</name>
 			<styleUrl>#default</styleUrl>
 			<ExtendedData>
@@ -94,21 +80,7 @@
 			<Point>
 				<coordinates>10.0120146654442,53.55811227542501,0</coordinates>
 			</Point>
-		</Placemark>
-		<Placemark>
-			<name>24</name>
-			<styleUrl>#default</styleUrl>
-			<ExtendedData>
-				<SchemaData schemaUrl="#route20">
-					<SimpleData name="id">24</SimpleData>
-					<SimpleData name="CX">10.012383687371875</SimpleData>
-					<SimpleData name="CY">53.558388443786562</SimpleData>
-				</SchemaData>
-			</ExtendedData>
-			<Point>
-				<coordinates>10.0123836873719,53.5583884437866,0</coordinates>
-			</Point>
-		</Placemark>
+		</Placemark>		
 		<Placemark>
 			<name>25</name>
 			<styleUrl>#default</styleUrl>
