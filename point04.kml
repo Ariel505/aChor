@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document id="root_doc">
-<Schema name="point03" id="point03">
+<Schema name="point04" id="point04">
 	<SimpleField name="id" type="float"></SimpleField>
 </Schema>
 	<StyleMap id="default">
@@ -46,54 +46,54 @@
 		<ListStyle>
 		</ListStyle>
 	</Style>
-<Folder><name>point03</name>  
+<Folder><name>point04</name> 
   <Placemark>
-	<name>30</name>
+	<name>40</name>
 	<styleUrl>#h2</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">30</SimpleData>
+		<SimpleData name="id">40</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>9.99526106528621,53.5520360002206</coordinates></Point>
+      <Point><coordinates>10.0040462571566,53.5571315431848</coordinates></Point>
   </Placemark>
   <Placemark>
-	<name>31</name>
+	<name>41</name>
 	<styleUrl>#default</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">31</SimpleData>
+		<SimpleData name="id">41</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>9.99649833619224,53.5527980741787</coordinates></Point>
+      <Point><coordinates>10.008378688678,53.5588295083302</coordinates></Point>
   </Placemark>
   <Placemark>
-	<name>32</name>
+	<name>42</name>
 	<styleUrl>#default</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">32</SimpleData>
+		<SimpleData name="id">42</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>9.99767954845807,53.553520445642</coordinates></Point>
+      <Point><coordinates>10.0093071370919,53.5591944734046</coordinates></Point>
   </Placemark>
   <Placemark>
-	<name>33</name>
+	<name>43</name>
 	<styleUrl>#default</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">33</SimpleData>
+		<SimpleData name="id">43</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>9.99816692500474,53.5538203636638</coordinates></Point>
+      <Point><coordinates>10.0134990943328,53.5610615456529</coordinates></Point>
   </Placemark>
   <Placemark>
-	<name>34</name>
+	<name>44</name>
 	<styleUrl>#default</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">34</SimpleData>
+		<SimpleData name="id">44</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>10.0018385741545,53.5562950889745</coordinates></Point>
+      <Point><coordinates>10.0139394139262,53.5614119113085</coordinates></Point>
   </Placemark>
   <Placemark>
-	<name>35</name>
+	<name>45</name>
 	<styleUrl>#default</styleUrl>
 	<ExtendedData><SchemaData schemaUrl="#point03">
-		<SimpleData name="id">35</SimpleData>
+		<SimpleData name="id">45</SimpleData>
 	</SchemaData></ExtendedData>
-      <Point><coordinates>10.0027811947575,53.556743182715</coordinates></Point>
+      <Point><coordinates>10.0147268763935,53.5619607210105</coordinates></Point>
   </Placemark>
 </Folder>
 </Document></kml>
