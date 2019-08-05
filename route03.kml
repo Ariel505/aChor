@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="route03" id="route03">
+	<SimpleField name="id" type="float"></SimpleField>
+	<SimpleField name="RouteLÃ¤ng" type="float"></SimpleField>
+</Schema>
+<StyleMap id="stylemap_id0">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#style0</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#style</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="style">
+		<LineStyle>
+			<color>ffffaa55</color>
+			<width>4</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Style id="style0">
+		<LineStyle>
+			<color>ffffaa55</color>
+			<width>4</width>
+		</LineStyle>
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+  <Placemark>
+	<name>route03</name>
+	<styleUrl>#stylemap_id0</styleUrl>
+	<ExtendedData><SchemaData schemaUrl="#route03">
+		<SimpleData name="id">2</SimpleData>
+		<SimpleData name="RouteLÃ¤ng">727</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><LineString><coordinates>10.0081358099884,53.5551333798448 10.0087231070364,53.5555426550272 10.0087957921847,53.5556280421991 10.0110656600303,53.5573460443613 10.0131357171,53.5589128151002 10.0132907728217,53.5590853333647 10.0143325110361,53.5599109718318 10.0146888531052,53.5603589741522</coordinates></LineString></MultiGeometry>
+  </Placemark>
+
+	<ExtendedData><SchemaData schemaUrl="#route03">
+		<SimpleData name="id">1</SimpleData>
+		<SimpleData name="RouteLÃ¤ng">725</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><LineString><coordinates>10.0074386541897,53.5557274945143 10.0080898745866,53.5562132243181 10.0082787004839,53.5563860760505 10.008518157963,53.5565806118368 10.0087046765582,53.5567037530446 10.0090296035911,53.5569446775429 10.0094235700099,53.5572274674407 10.0096649829315,53.5574040802939 10.0099441949488,53.5576012513043 10.0102189726973,53.5578039099854 10.0102716934046,53.5578473452853 10.0110989314002,53.5584677429841 10.0115573486547,53.5588181727772 10.0120306836661,53.5591697647947 10.0121853486287,53.5592906737003 10.0123431363526,53.5594674070096 10.0144023149656,53.5607445864952</coordinates></LineString></MultiGeometry>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#route03">
+		<SimpleData name="id">3</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><LineString><coordinates>9.99525867843551,53.5520345493239 9.99995434437702,53.5549130584399 10.0007867558943,53.5554255581498 10.001247057941,53.5557941038526 10.0013466334381,53.5559414106975 10.0015177679949,53.5560924360523 10.0017374082467,53.5562479287594 10.002779007485,53.556742079362</coordinates></LineString></MultiGeometry>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#route03">
+		<SimpleData name="id">4</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><LineString><coordinates>10.0147408418793,53.5619582702432 10.0139501859253,53.5614071376441 10.0136158052354,53.5611405760917 10.0128720699196,53.5606269133651 10.0123383151941,53.5603585725617 10.010826361361,53.5597847110389 10.0040488210262,53.5571332145073</coordinates></LineString></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>
