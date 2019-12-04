@@ -3,3 +3,5 @@ shapely==1.6.4
 fiona==1.8.2
 rtree==0.8.3
 pysal==1.14.4
+sklearn==0.21.3
+dbf==0.98.3
