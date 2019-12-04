@@ -11,7 +11,6 @@ from decimal import *
 class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
     values and generates breaks according to these"""
-
     
     def version_check(method):
         """A wrapper for checking the current python environment version for
@@ -40,20 +39,51 @@ class aChor(object):
             self.memory = ":memory:"
         else:
             self.memory = "achor.db"
-            
+        
         global con
         global cur
+        
         con = sql.connect(self.memory)
-        #con = sql.connect("achor.db")
+        #dir_path = os.path.split(os.path.abspath(scriptname))[0]
+        #con = sql.connect( dir_path + r"/achor.db")
         cur = con.cursor()
         cur.execute("PRAGMA synchronous = OFF")
         cur.execute("PRAGMA journal_mode = MEMORY")
-        
+
         self.db()
+        if self.method == 6:
+            self.spatial_join()
         self.neighborsearch()
         self.selection()
-        self.generate_output()
+        self.generate_output()    
     
+    def spatial_join(self): 
+        #https://gis.stackexchange.com/questions/102933/more-efficient-spatial-join-in-python-without-qgis-arcgis-postgis-etc
+        """ Cluster Method to spatial join point to polygon based on location
+        Output polygon shapefile with dbscan field for further classification"""
+        dir_path = str(os.path.split(os.path.abspath(scriptname))[0]).strip()
+        outshp = dir_path + r"/test/inputpoint/join_poly.shp"
+        points = [pt for pt in fiona.open(dir_path + r"/test/inputpoint/inputpoint.shp")]
+        
+        with fiona.open(self.shp) as src:
+            meta = src.meta
+            meta['schema']['properties'].update({'dbscan': 'int'})
+            polygons = [pol for pol in src]
+ 
+        with fiona.open (outshp, 'w', **meta) as output: 
+
+        # iterate through points 
+            for i, pt in enumerate(points):
+                point = shape(pt['geometry'])
+            #iterate through polygons
+                for j, poly in enumerate(polygons):
+                    if point.within(shape(poly['geometry'])):
+                    # sum of attributes values
+                    #polygons[j]['properties']['dbscan'] = points[i]['properties']['dbscan']
+                        poly['properties']['dbscan'] = points[i]['properties']['dbscan']
+                        output.write(poly)
+                    #arrint.append(points[i]['properties']['dbscan'])
+                    
     @version_check
     def generate_output(self, fout):
         """Generates spatial context defined localextreme breaks with respect to
@@ -131,6 +161,10 @@ class aChor(object):
         )
         """        
         cur.execute(sql_locextreme)
+        sql_locextreme = """
+        CREATE INDEX index_locExt ON locExtreme ("PolygonID");
+        """ 
+        cur.execute(sql_locextreme)
         
         sql_neighborpairs = """
         CREATE TABLE IF NOT EXISTS "neighborPairs" (
@@ -140,8 +174,14 @@ class aChor(object):
             "Neighbor" numeric NOT NULL,
             "Difference" numeric NOT NULL,
             "Distance" numeric NOT NULL,
+            "CID" numeric,
+            "PID" numeric,
           CONSTRAINT "neighborPairs_pkey" PRIMARY KEY ("CenterID", "PolygonID")
-        )        
+        );     
+        """
+        cur.execute(sql_neighborpairs)
+        sql_neighborpairs = """
+        CREATE INDEX index_nbPairs ON neighborPairs ("CenterID", "PolygonID");
         """
         cur.execute(sql_neighborpairs)
         
@@ -150,10 +190,14 @@ class aChor(object):
         CREATE TABLE IF NOT EXISTS "locExtremePairs" (
             "CenterID" text NOT NULL,
              min numeric,
-             "Note" text NOT NULL,
-        CONSTRAINT "locExtremePairs_pkey" PRIMARY KEY ("CenterID")
+             "Note" text NOT NULL
         );
         """
+        cur.execute(sql_localextremepairs)
+        # index key
+        sql_localextremepairs = """
+        CREATE INDEX index_locExtP ON locExtremePairs ("CenterID");
+        """        
         cur.execute(sql_localextremepairs)
         
         sql_localmaxpairs = """
@@ -163,6 +207,10 @@ class aChor(object):
             "Note" text NOT NULL,
         CONSTRAINT "locmaxPairs_pkey" PRIMARY KEY ("CenterID")
         );
+        """
+        cur.execute(sql_localmaxpairs)
+        sql_localmaxpairs = """
+        CREATE INDEX index_locMaxP ON locmaxPairs ("CenterID");
         """
         cur.execute(sql_localmaxpairs)
         
@@ -175,6 +223,10 @@ class aChor(object):
         );
         """
         cur.execute(sql_localminpairs)
+        sql_localminpairs = """
+        CREATE INDEX index_locMinP ON locminPairs ("CenterID");
+        """
+        cur.execute(sql_localminpairs)
         
         sql_hotspotpairs = """
         CREATE TABLE IF NOT EXISTS "hotspotPairs" (
@@ -184,6 +236,9 @@ class aChor(object):
         );
         """
         cur.execute(sql_hotspotpairs)
+        sql_hotspotpairs = """
+        CREATE INDEX index_locHotP ON hotspotPairs ("CenterID");
+        """
         
         # intersection search and break generation
         sql_linesweep = """
@@ -193,8 +248,12 @@ class aChor(object):
            Center NUMERIC NOT NULL,
            Neighbor NUMERIC NOT NULL,
            min NUMERIC NOT NULL,
-            Note TEXT
+           Note TEXT
         );
+        """
+        cur.execute(sql_linesweep)
+        sql_linesweep = """
+        CREATE INDEX index_linesweep ON line_sweep ("CenterID", "PolygonID");
         """
         cur.execute(sql_linesweep)
         
@@ -204,6 +263,10 @@ class aChor(object):
             sweep NUMERIC,
             seg BLOB
         );
+        """
+        cur.execute(sql_intersection)
+        sql_intersection = """
+        CREATE INDEX index_intersect ON intersection ("sweep");
         """
         cur.execute(sql_intersection)
         con.commit()
@@ -227,8 +290,10 @@ class aChor(object):
         os.chdir(plugin_dir_qgis)
         
         if not os.path.isdir('tmp'): os.mkdir('tmp') 
-        
-        inputshp = self.shp
+        if self.method == 6:
+            inputshp = r"test/inputpoint/join_poly.shp"
+        else:
+            inputshp = self.shp
         outputshp = r"tmp/inputshape.shp"
         strdir=str(plugin_dir_qgis).strip()
         #make it cross-platform compatible
@@ -254,12 +319,14 @@ class aChor(object):
 
             fid='UNISTR'
             val = self.field
-            
+            cluster = 'dbscan'
             for feature in features:
                 objval = round(feature['properties'][val],4)
                 maxval = objval
                 minval = objval
                 cond = False
+                if self.method == 6:
+                    cid = feature['properties'][cluster]
                 j = 0
                 k = 0
                 geometry = shape(feature['geometry'])
@@ -277,21 +344,40 @@ class aChor(object):
                         subval = round(otherfeature['properties'][val],4)
                         distance = round((geometry.centroid.distance(othergeometry.centroid)),3)
                         diff = round((objval-subval),4)
-                        # Local Extreme method
-                        db_neighborpairs_insert = [feature['properties'][fid],
+                        if self.method <= 5:
+                        # All others method
+                            db_neighborpairs_insert = [feature['properties'][fid],
+                                                       otherfeature['properties'][fid],
+                                                       objval,
+                                                       subval,
+                                                       diff,
+                                                       distance,'','']
+                            
+                            cur.execute("""
+                            INSERT INTO neighborpairs 
+                                (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                            """, db_neighborpairs_insert)
+                            con.commit()
+                        # Cluster method
+                        if self.method == 6:
+                            pid = otherfeature['properties'][cluster]
+                            db_clusters_insert = [feature['properties'][fid],
                                                    otherfeature['properties'][fid],
                                                    objval,
                                                    subval,
                                                    diff,
-                                                   distance]
+                                                   distance,
+                                                   cid,
+                                                   pid]
                         
-                        cur.execute("""
+                            cur.execute("""
                         INSERT INTO neighborpairs 
-                            (CenterID, PolygonID, Center, Neighbor, Difference, Distance) 
-                            VALUES (?, ?, ?, ?, ?, ?);
-                        """, db_neighborpairs_insert)
-                        con.commit()
-
+                            (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                        """, db_clusters_insert)
+                            con.commit()
+                            
                         if diff <= 0 and subval >= maxval:
                             cond = False
                             maxval = subval
@@ -361,8 +447,8 @@ class aChor(object):
             if (self.method == 5):
                 cur.execute("""
                         SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
-                        where ABS(nb."Difference") > {}
-                        group by CenterID order by ABS(nb."Difference") DESC limit 500;
+                        where (nb."Difference") > {}
+                        group by CenterID order by ABS(nb."Difference") DESC limit 3000;
                         """.format(self.swp))
                 db_neighbors_insert = [row for row in cur.fetchall()]
                 cur.execute("SELECT * FROM locExtreme")
@@ -376,6 +462,27 @@ class aChor(object):
                 cur.execute("""
                             update "locExtreme"
                             set "Note" = "neighbors";
+                            """)
+                con.commit()
+            # Clusters method
+            if (self.method == 6):
+                cur.execute("""
+                        SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
+                        where (nb."Difference") > {} and (nb."CID" = -1 or nb."PID" = -1) and not nb."CID" = nb."PID"
+                        group by CenterID order by ABS(nb."Difference") DESC limit 3000;
+                        """.format(self.swp))
+                db_clusters_insert = [row for row in cur.fetchall()]
+                cur.execute("SELECT * FROM locExtreme")
+                if not cur.fetchone():        
+                   cur.executemany("""
+                                    INSERT INTO locExtreme 
+                                            (PolygonID, Note) 
+                                            VALUES (?, ?);
+                                    """, db_clusters_insert)
+                   con.commit()
+                cur.execute("""
+                            update "locExtreme"
+                            set "Note" = "clusters";
                             """)
                 con.commit()
             print("Finish neighborsearch, method: " + str(self.method))
@@ -396,7 +503,7 @@ class aChor(object):
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and  ABS(nb."Difference") > {}
                   GROUP by nb."CenterID", loc."Note"
-                  ORDER by  MIN(ABS(nb."Difference")) DESC
+                  ORDER by MIN(ABS(nb."Difference")) DESC limit 3000;
             """.format(self.swp)
             cur.execute(sql_localextreme)
             db_selection_localextreme = [row for row in cur.fetchall()]
@@ -417,7 +524,7 @@ class aChor(object):
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" > {}
                   GROUP BY nb."CenterID", loc."Note"
-                  ORDER BY MAX(nb."Difference") DESC;
+                  ORDER BY MIN(ABS(nb."Difference")) DESC limit 1500;
             """.format(self.swp)
             cur.execute(sql_localmax)
             db_selection_localmax = [row for row in cur.fetchall()]
@@ -438,7 +545,7 @@ class aChor(object):
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and nb."Difference" < {}
                   GROUP BY nb."CenterID", loc."Note"
-                  ORDER BY MIN(nb."Difference") ASC;
+                  ORDER BY MIN(ABS(nb."Difference")) DESC limit 1500;
             """.format(self.swp)
             cur.execute(sql_localmin)
             db_selection_localmin = [row for row in cur.fetchall()]
@@ -461,7 +568,7 @@ class aChor(object):
                   WHERE nb."CenterID" = loc."PolygonID" and ABS(nb."Difference") > {}
                   AND NOT (nb."PolygonID" IN (select loc."PolygonID" from "locExtreme" loc))
                   GROUP BY nb."CenterID", nb."Difference", loc."Note"
-                  ORDER BY ABS(nb."Difference") DESC;
+                  ORDER BY ABS(nb."Difference") DESC limit 3000;
             """.format(self.swp)
             cur.execute(sql_hotspot)
             db_selection_hotspot = [row for row in cur.fetchall()]
@@ -483,7 +590,7 @@ class aChor(object):
                   FROM "neighborPairs" nb, "locExtreme" loc
                   WHERE nb."CenterID" = loc."PolygonID" and ABS(nb."Difference") > {}
                   GROUP by nb."CenterID", loc."Note"
-                  ORDER by MAX(nb."Difference") DESC;
+                  ORDER by MAX(nb."Difference") DESC limit 3000;
             """.format(self.swp)
             cur.execute(sql_neighbors)
             db_selection_neighbors = [row for row in cur.fetchall()]
@@ -494,6 +601,29 @@ class aChor(object):
                 cur.executemany("""
                     INSERT INTO locExtremePairs (CenterID, min, Note)
                           VALUES (?, ?, ?);""", (db_selection_neighbors))
+                con.commit()
+        
+    ################################################################################
+    
+        # sql statement for clusters
+        elif (self.method == 6):
+            sql_clusters = """
+            SELECT nb."CenterID", ABS(nb."Difference")
+                  FROM "neighborPairs" nb
+                  WHERE (nb."Difference" > {}) and (((nb."CID" = -1 or nb."PID" = -1) 
+                  and not nb."CID" = nb."PID") or (not(nb."CID" = -1 or nb."PID" = -1) and not nb."CID" = nb."PID"))
+                  GROUP by nb."CenterID", ABS(nb."Difference")
+                  ORDER by ABS(nb."Difference") DESC limit 3000;
+            """.format(self.swp)
+            cur.execute(sql_clusters)
+            db_selection_clusters = [row for row in cur.fetchall()]
+    
+    
+            cur.execute("SELECT * FROM locExtremePairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO locExtremePairs (CenterID, min, Note)
+                          VALUES (?, ?, 'clusters');""", (db_selection_clusters))
                 con.commit()
         
     ################################################################################
@@ -569,6 +699,14 @@ class aChor(object):
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                 con.commit()
+            if self.method == 6:
+                cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min" = ABS(nb."Difference")
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                con.commit()
 
         cur.execute("SELECT rowid, centerid, polygonid, center, neighbor, min, note FROM line_sweep")
         data = cur.fetchall()
@@ -611,7 +749,7 @@ class aChor(object):
             match_segments = [segment[0] for i, segment in enumerate(segments) 
                                 if segment[1].contains(Point(sweep, i+1))]
             
-            intersection.append((len(match_segments), round(sweep,2), [x for x in match_segments]))
+            intersection.append((len(match_segments), round(sweep,4), [x for x in match_segments]))
             
             sweep += min_dif            
             
@@ -692,7 +830,7 @@ class aChor(object):
         data = cur.fetchone()
         break_val = data[1]
         segment_ids = data[2]
-
+        #print(segment_ids.decode('utf-8', 'backslashreplace'))
         # deleting the segments from the current intersection search for the next
         # line sweep
         if sys.version_info.major < 3:
@@ -719,17 +857,16 @@ class aChor(object):
             # check if database empty? if yes return the last value
             cur.execute("SELECT * FROM line_sweep")
             if not cur.fetchone():
-                return (round(residual_brk_val, 2),True)
-            else:
-                self.linesweep()
-
-            return (round(residual_brk_val, 2),False)
-        # after removing the previously evaluated line segments run the line 
-        # sweep again
-        else:
+                return (round(residual_brk_val, 4),True)
+            
             self.linesweep()
 
-        return (round(break_val,2),False)        
+            return (round(residual_brk_val, 4),False)
+        # after removing the previously evaluated line segments run the line 
+        # sweep again
+        self.linesweep()
+
+        return (round(break_val,4),False)        
 
     # con.close()
 if __name__ == "__main__":
@@ -739,7 +876,7 @@ if __name__ == "__main__":
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
-    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors', type=int)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors, 6=clusters, 71=globalextreme', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
     args = parser.parse_args()
 

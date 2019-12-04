@@ -28,27 +28,40 @@
  ***************************************************************************/
 """
 from PyQt5.QtCore import *
+#QSettings, QTranslator, qVersion, QCoreApplication, QRegExp
 from PyQt5.QtGui import QIcon, QColor, QRegExpValidator
 from PyQt5.QtWidgets import QAction, QLineEdit, QDesktopWidget, QMessageBox, QDockWidget
 from qgis.core import *
+#from qgis.core import QgsProject, QgsVectorLayer, QgsRenderContext
+#QgsSymbolV2, QgsRendererRangeV2, QgsGraduatedSymbolRendererV2, QgsMapLayerRegistry
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .aChor_dialog import aChorDialog
 import os.path
-import numpy, os, sys, subprocess, shlex, shutil
+import os, sys, subprocess, shlex, shutil
 from subprocess import Popen, PIPE
 from osgeo import ogr
 import qgis.utils
-import fiona, logging, csv
+import fiona, logging, csv, time
 from shapely.geometry import shape, mapping
 import pysal
 from pysal.esda.getisord import *
 from pysal.weights.Distance import DistanceBand
 
+import numpy as np
 
+#sys.setrecursionlimit(8000)
+
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.preprocessing import StandardScaler
+import dbf
+   
 class aChor:
     """QGIS Plugin Implementation."""
+
     
     def __init__(self, iface):
         """Constructor.
@@ -190,10 +203,12 @@ class aChor:
         self.dlg.rdb2.clicked.connect(self.setDisable)
         self.dlg.rdb3.clicked.connect(self.setDisable)
         self.dlg.rdb5.clicked.connect(self.setDisable)
+        self.dlg.rdb6.clicked.connect(self.setDisable)
         rx3 = QRegExp('^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$')
         validator3 = QRegExpValidator(rx3)
         self.dlg.linefdb.setValidator(validator3)        
         self.dlg.rdb4.clicked.connect(self.setEnable)
+        self.dlg.rdb6.clicked.connect(self.setEnable)
 
 
     def unload(self):
@@ -206,18 +221,25 @@ class aChor:
         # remove the toolbar
         del self.toolbar
 
-    def setEnable(self):
-        self.dlg.label_5.setDisabled(False)
-        self.dlg.label_7.setDisabled(False)
-        self.dlg.linefdb.setDisabled(False)
+    def setEnable(self):        
         if self.dlg.rdb4.isChecked():
+            self.dlg.label_5.setDisabled(False)
+            self.dlg.label_7.setDisabled(False)
+            self.dlg.linefdb.setDisabled(False)
             self.load_comboBox()
             self.dlg.linefdb.setText(str(round(thresh,4)))
+        if self.dlg.rdb6.isChecked():
+            self.dlg.label_8.setDisabled(False)
+            self.dlg.lineps.setDisabled(False)
+            self.dlg.lineps.setText('0.5')
     
     def setDisable(self):
         self.dlg.label_5.setDisabled(True)
         self.dlg.label_7.setDisabled(True)
         self.dlg.linefdb.setDisabled(True)
+        self.dlg.label_8.setDisabled(True)
+        self.dlg.lineps.setDisabled(True)
+
         
     def clear_fields(self):
         """Clearing the fields when layers are changed"""
@@ -271,7 +293,7 @@ class aChor:
                 return
             try:
                 self.dlg.comboBox.activated.connect(lambda: self.suggest_sweep(str(path).strip(), str(self.dlg.comboBox.currentText()).strip()))
-                self.dlg.comboBox.currentIndexChanged.connect(lambda: self.suggest_sweep(str(path).strip(), str(self.dlg.comboBox.currentText()).strip()))
+                #self.dlg.comboBox.currentIndexChanged.connect(lambda: self.suggest_sweep(str(path).strip(), str(self.dlg.comboBox.currentText()).strip()))
 
             except:
                 return
@@ -323,26 +345,29 @@ class aChor:
 
         with fiona.open(inp) as source:
             features = list(source)
+
         global achor_max_val
-        global achor_min_val#
-        global suggestion
+        global achor_min_val
+        suggestion = 1
+        
         try:
             achor_max_val = max(val['properties'][attr] for val in features)
             achor_min_val = min(val['properties'][attr] for val in features)
         except KeyError:
             return
         
-        valrange = achor_max_val-achor_min_val
-
-        if 0 < valrange < 1:
-            suggestion = valrange/100
-        elif 1 < valrange < 100:
-            suggestion = round(valrange/(valrange*1.1),2)
-        elif 100 < valrange < 1000:
-            suggestion = round(valrange/(valrange*0.37),2)
-        elif valrange > 1000:
-            suggestion = valrange/(valrange/2)
-        self.dlg.lineEdit2.setText(str(suggestion))
+        if (achor_max_val > achor_min_val):
+            valrange = achor_max_val-achor_min_val
+    
+            if 0 < valrange < 1:
+                suggestion = valrange/100
+            elif 1 < valrange < 100:
+                suggestion = round(valrange/(valrange*1.1),2)
+            elif 100 < valrange < 1000:
+                suggestion = round(valrange/(valrange*0.37),2)
+            elif valrange > 1000:
+                suggestion = valrange/(valrange/2)
+            self.dlg.lineEdit2.setText(str(suggestion))
         source.close()
         
     def create_colorrange(self, i_step, i_start, i_stop, mid=None):
@@ -469,7 +494,7 @@ class aChor:
                 # Add Z-scores and p-values to their field column
                 # to use normality hypothesis
                 # first version: max(y)
-                if numpy.mean(y) >= 0:
+                if np.mean(y) >= 0:
                     outFeature.SetField("Z-score", statistics.Zs[i])
                     outFeature.SetField("p-value", statistics.p_norm[i] * 2)
                     Z_score = float(statistics.Zs[i])
@@ -511,14 +536,38 @@ class aChor:
         with fiona.open(shp) as src:
             meta = src.meta
             meta['schema']['geometry'] = 'Point'
+            meta['schema']['properties'].update({'cX': 'float:15.13','cY': 'float:15.13','dbscan': 'int'})
             with fiona.open(outpoint, 'w', **meta) as dst:
                 for f in src:
-                    centroid = shape(f['geometry']).centroid
+                    centroid = shape(f['geometry']).centroid                    
                     f['geometry'] = mapping(centroid)
+                    f['properties']['cX'] = round(float(f['geometry']['coordinates'][1]),13)
+                    f['properties']['cY'] = round(float(f['geometry']['coordinates'][0]),13)
+                    f['properties']['dbscan'] = 0
                     dst.write(f)
             dst.close()
         src.close()
     
+    
+    def make_var_density_blobs(self,n_samples=100, centers=[[0,0]], cluster_std=[0.5], random_state=0):
+        samples_per_blob = n_samples // len(centers)
+        blobs = [make_blobs(n_samples=samples_per_blob, centers=[c], cluster_std=cluster_std[i])[0]
+             for i, c in enumerate(centers)]
+        labels = [i * np.ones(samples_per_blob) for i in range(len(centers))]
+        return np.vstack(blobs), np.hstack(labels)
+
+    def dbf_to_csv(self,dbf_table_pth):#Input a dbf, output a csv, same name, same path, except extension
+        csv_fn = dbf_table_pth[:-4]+ ".csv" #Set the csv file name
+        QMessageBox.warning(self.dlg.show(), self.tr("aChor:Info"),
+                     self.tr(str(csv_fn)), QMessageBox.Ok)
+        table = DBF(dbf_table_pth)# table variable is a DBF object
+        with open(csv_fn, 'w', newline = '') as f:# create a csv file, fill it with dbf content
+            writer = csv.writer(f)
+            writer.writerow(table.field_names)# write the column name
+            for record in table:# write the rows
+                writer.writerow(list(record.values()))
+        return csv_fn# return the csv name
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -537,6 +586,9 @@ class aChor:
         rx2 = QRegExp('^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$')
         validator2 = QRegExpValidator(rx2)
         self.dlg.lineEdit2.setValidator(validator2)
+        rx3 = QRegExp('^(0(\.\d+)?|1\.0)\d{0,3}$')
+        validator3 = QRegExpValidator(rx3)
+        self.dlg.lineps.setValidator(validator3)
         # show the dialog
         self.dlg.show()
         self.load_comboBox()
@@ -557,7 +609,7 @@ class aChor:
             inLayer = inDataSource.GetLayer()
             C = selectedLayer.fields().indexFromName(self.dlg.comboBox.currentText())
             type = inLayer.GetLayerDefn().GetGeomType()
-            myVectorLayer = QgsVectorLayer(path, 'Layer', 'ogr')
+            
             if type == 3:  # polygon
                #pass
                 classnum = self.dlg.lineEdit.text()
@@ -565,20 +617,28 @@ class aChor:
                 field = self.dlg.comboBox.currentText()
                 shp = str(path)
                 if self.dlg.rdb3.isChecked():
-                    method = '1'
+                    method = 1
                     display = 'localextreme'
                 elif self.dlg.rdb1.isChecked():
-                    method = '2'
+                    method = 2
                     display = 'localmax'
                 elif self.dlg.rdb2.isChecked():
-                    method = '3'
+                    method = 3
                     display = 'localmin'
                 elif self.dlg.rdb4.isChecked():
-                    method = '4'
+                    method = 4
                     display = 'hotcoldspot'
                 elif self.dlg.rdb5.isChecked():
-                    method = '5'
-                    display = 'neighbors'
+                    method = 5
+                    display = 'neighbor'
+                elif self.dlg.rdb6.isChecked():
+                    method = 6
+                    display = 'cluster'
+                elif self.dlg.rdb7.isChecked():
+                    method = 7
+                    display = 'globalextreme'
+                myVectorLayer = QgsVectorLayer(path, display, 'ogr')
+
                 #QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
                      #self.tr(self.plugin_dir+'\n'+classnum+'\n'+interval+'\n'+field+'\n'+shp+'\n'+display), QMessageBox.Ok)
                 logging.info('class number:'+classnum+'\ninterval:'+str(interval)+'\nfield:'+field+'\nshapefile:'+shp+'\nmethods:'+display)
@@ -596,54 +656,111 @@ class aChor:
                     strdir=strdir.replace(".","").replace("\\","/").replace("//","/")
                 elif os.name == "posix":
                     py_executable = 'python'
-                if method == '4':
-                    thresh = pysal.min_threshold_dist_from_shapefile(path) 
-                    number = round(float(self.dlg.linefdb.text()),4)                  
-                    if number and self.dlg.rdb4.isChecked():
-                        QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
-                                        self.tr("Default Fixed Distance Band: "+str(round(thresh,4))+'\n User Defined: '+self.dlg.linefdb.text()), QMessageBox.Ok)
-                                    
+                
+                if method == 4 or method == 6:                                                        
                     #convert polygon to point                    
                     outpoint = strdir+"/test/inputpoint"
-                    self.getCentroid(shp,outpoint)
+                    self.getCentroid(shp,outpoint) 
                     
-                    #Run Getis-Ord statistics
-                    outfilename = strdir+"/test/hotspotshp"
-                    type_w = "B"
-                    permutationsValue = 9999
                     u = []
                     inDataSource1 = inDriver.Open(outpoint, 0)
-                    inLayer1 = inDataSource1.GetLayer()                    
+                    inLayer1 = inDataSource1.GetLayer()
+
                     for i in range(0, inLayer1.GetFeatureCount()):
                         geometry = inLayer1.GetFeature(i)
-                        u.append(geometry.GetField(C))
-                    y = numpy.array(u)  # attributes vector
+                        u.append(geometry.GetField(C))                        
+                    y = np.array(u)  # attributes vector
                     t = ()
                     for feature in inLayer1:
                         geometry = feature.GetGeometryRef()
                         xy = (geometry.GetX(), geometry.GetY())
                         t = t + (xy,)
-                    numpy.random.seed(12345)
-
-                    threshold = number
-                    w = DistanceBand(t, int(number), p=2, binary=False)
-                    logging.info("Hotspot: Fixed Distance Band: "+self.dlg.linefdb.text())
-
-                    statistics = G_Local(y, w, star=True, transform=type_w, permutations=permutationsValue)
-                    self.write_file(outfilename, statistics, layerName, inLayer, 
-                                    inDataSource, 
-                                    y, threshold)
                     
                     inDataSource1.Destroy()
-                    shutil.rmtree(outpoint)
-                    shp=outfilename+".shp"
+                    
+                    if method == 4:
+                        thresh = pysal.min_threshold_dist_from_shapefile(path)
+                        number = round(float(self.dlg.linefdb.text()),4)               
+                        if number and self.dlg.rdb4.isChecked() and  method == 4:
+                                QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
+                                            self.tr("Default Fixed Distance Band: "+str(round(thresh,4))+'\n User Defined: '+self.dlg.linefdb.text()), QMessageBox.Ok)
+                                
+                        #Run Getis-Ord statistics
+                        outfilename = strdir+"/test/hotspotshp"
+                        type_w = "B"
+                        permutationsValue = 9999                   
+                        np.random.seed(12345)
+                        threshold = number
+                        w = DistanceBand(t, int(number), p=2, binary=False)
+                        logging.info("Hotspot: Fixed Distance Band: "+self.dlg.linefdb.text())
+    
+                        statistics = G_Local(y, w, star=True, transform=type_w, permutations=permutationsValue)
+                        self.write_file(outfilename, statistics, layerName, inLayer, 
+                                        inDataSource, 
+                                        y, threshold)                      
+                      
+                        shp=outfilename+".shp"      
+                   
+                if method == 6:
+                    # Generate samples
+                    centers = [[0, -1], [12, 5], [30, 101]]
+                    densities = [0.2, 0.9, 0.5]
+                    #convert polygon to point                   
+                    items=["cx","cy",field]
+                    # convert attribute csv
+                    dbfname=dbf.Table(outpoint+r"/inputpoint.dbf",codepage='utf8')
+                    dbfname.open()    
+                    csvname=strdir+"/test/inputpoint/inputpoint.csv"            
+                   
+                    with open(csvname, 'w', newline = '') as f:                        
+                        writer = csv.writer(f)
+                        writer.writerow(items)
+                        for record in dbfname:
+                            #print(record['GebietName'])
+                            attribute_list = []
+                            attribute_list.append(record['cx'])
+                            attribute_list.append(record['cy'])
+                            attribute_list.append(record[field.lower()])
+                            try:                                   
+                                writer.writerow(attribute_list)                                
+                            except ValueError: 
+                                pass
+                    dbfname.close()
+                    
+                    # Compute DBSCAN   
+                    data = np.loadtxt(open(csvname, "rb"), delimiter=",", skiprows=1)
+                    nrows = data.shape[0]
+                    
+                    X, labels_true = self.make_var_density_blobs(n_samples=nrows, centers=centers, cluster_std=densities,
+                            random_state=0)
+                    X = StandardScaler().fit_transform(data)
+
+                    outdbf = dbf.Table(outpoint+r"/inputpoint.dbf",codepage='utf8')   
+                    outdbf.open(mode=dbf.READ_WRITE)                   
+                    db_t1 = time.time()
+                    db = DBSCAN(eps=float(self.dlg.lineps.text())).fit(X)
+                    db_labels = db.labels_
+                    db_elapsed_time = time.time() - db_t1
+                    n_clusters_db_ = len(set(db_labels)) - (1 if -1 in db_labels else 0)
+                    j=0
+                    for record in outdbf:
+                        with record as r:
+                            r.dbscan=db_labels[j]
+                            #print('write rows:'+str(j)+', value:'+str(db_labels[j]))
+                            j +=1
+
+                    if n_clusters_db_ <= 1:
+                        print('Silhouette Coefficient: NaN (too few clusters)')
+                        QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
+                                            self.tr("too few clusters: "+db_labels+"/n Please change eps to get better result"), QMessageBox.Ok)
+                    outdbf.close()
                     
                 sys.argv.append(classnum)
                 sys.argv.append(interval)
                 sys.argv.append(field)
                 sys.argv.append(shp)
                 sys.argv.append(method)
-                cmd=py_executable+" "+strdir+"/class_achor.py "+classnum+" "+str(interval)+" "+field+" "+shp.strip().replace('\\',r'/')+" -m "+method
+                cmd=py_executable+" "+strdir+"/class_achor.py "+classnum+" "+str(interval)+" "+field+" "+shp.strip().replace('\\',r'/')+" -m "+ str(method)
                 logging.info("Starting main script")
                 QMessageBox.warning(self.dlg.show(), self.tr("aChor:Info"),
                      self.tr("Starting Main Script... Please wait for response"), QMessageBox.Ok)
@@ -656,7 +773,6 @@ class aChor:
                     if not (str(out).strip() == '' or str(out).strip() == "b''"):
                         print('info:'+str(out).strip())
                     
-    
                 
                 csvfile = strdir+'/achorbreaks.csv'
                  
@@ -704,19 +820,22 @@ class aChor:
                      ranges.append(rng)
                     
                 # create the renderer and assign it to a layer
-                expression = field # field name
+                expression = field # field name               
                 renderer = QgsGraduatedSymbolRenderer(expression, ranges)
                 myVectorLayer.setRenderer(renderer)
+
                 # load the layer with class breaks
                 QgsProject.instance().addMapLayer(myVectorLayer)
                 myVectorLayer.triggerRepaint()
                 rcsv.close()
                 # remove temporarily files
                 os.remove(csvfile)
-                if method == '4':
+                if method == 4:
                     filelist = [ f for f in os.listdir(strdir+"/test/") if f.startswith("hotspotshp") ]
                     for f in filelist:
                         os.remove(os.path.join(strdir+"/test/", f))
+                elif method == 4 or method == 6:
+                    shutil.rmtree(self.plugin_dir+"/test/inputpoint")
                 shutil.rmtree(self.plugin_dir+"/tmp")
                 print("log: aChor Classification Success")
                 QMessageBox.information(self.dlg.show(), self.tr("aChor:Result"),
