@@ -834,7 +834,7 @@ class aChor:
                     filelist = [ f for f in os.listdir(strdir+"/test/") if f.startswith("hotspotshp") ]
                     for f in filelist:
                         os.remove(os.path.join(strdir+"/test/", f))
-                elif method == 4 or method == 6:
+                if method == 4 or method == 6:
                     shutil.rmtree(self.plugin_dir+"/test/inputpoint")
                 shutil.rmtree(self.plugin_dir+"/tmp")
                 print("log: aChor Classification Success")
