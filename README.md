@@ -17,14 +17,18 @@ Your default aChor plugin directory is located at:<br>
 <ul>
     <li>This plugin using fiona, shapely, gdal, pysal and Rtree libraries.
     <li>Rtree must be version 0.8.3 or above.
+    <li>Pysal must be version 1.14.4 or below. (python -m pip install pysal==1.14.3 --user)
     <li>To install python packages, please using pip or easy_install in <b>OSGEO4W</b> shell.
-    <li>Linux: <br><i>sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb </i><br>
+    <li>Using requirements.txt install file: <i>sudo -H python -m pip install -r requirements.txt</i>
+    <li>Step by step installation:</ul>
+    <ol><li>Linux: <br><i>sudo wget http://ftp.de.debian.org/debian/pool/main/p/python-rtree/python-rtree_0.8.3+ds-1_all.deb </i><br>
 	<i>sudo apt install /filedir/python-rtree_0.8.3+ds-1_all.deb</i>
     <li>Windows: <i>python -m pip install Rtree-0.8.3-cp36-cp36m-win_amd64.whl</i>
-    <li>For windows python packages, you may download them here:<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona" >http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona</a>
-    <li>Check if libraries successfully installed, open the <b>OSGEO4W</b> shell and try to import them.
-	<li>C:\> py3_env<br>
-	<li>C:\> python<br>
+    <br>For windows python packages, you may download them here:<a href="http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona" >http://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona</a></ol>
+<ul>    
+    <li>Check if libraries successfully installed, open the <b>OSGEO4W</b> shell and try to import them.<br>
+	C:\> py3_env<br>
+	C:\> python<br>   
 	&gt;&gt;&gt;&nbsp;import rtree<br>
 	&gt;&gt;&gt;&nbsp;import fiona<br>
 	&gt;&gt;&gt;&nbsp;import shapely<br>
