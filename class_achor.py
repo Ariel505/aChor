@@ -7,6 +7,8 @@ import argparse
 from shapely.geometry import shape, LineString, Point		   
 from rtree import index
 from decimal import *
+import shutil
+
 
 class aChor(object):
     """Creates an aChor-classification object which identifies local extreme
@@ -51,39 +53,130 @@ class aChor(object):
         cur.execute("PRAGMA journal_mode = MEMORY")
 
         self.db()
-        if self.method == 6:
-            self.spatial_join()
+        if self.method == 4:
+            self.upd_attribute()
+        elif self.method == 6:
+            self.upd_attribute()
         self.neighborsearch()
-        self.selection()
+        if not (self.method == 71 or self.method == 72):
+            self.selection()
         self.generate_output()    
     
-    def spatial_join(self): 
-        #https://gis.stackexchange.com/questions/102933/more-efficient-spatial-join-in-python-without-qgis-arcgis-postgis-etc
-        """ Cluster Method to spatial join point to polygon based on location
-        Output polygon shapefile with dbscan field for further classification"""
+    def upd_attribute(self):         
         dir_path = str(os.path.split(os.path.abspath(scriptname))[0]).strip()
-        outshp = dir_path + r"/test/inputpoint/join_poly.shp"
-        points = [pt for pt in fiona.open(dir_path + r"/test/inputpoint/inputpoint.shp")]
-        
+        if self.method == 4:
+            attr_p = dir_path + r"/test/hotspotshp.dbf"
+        elif self.method ==6:
+            attr_p = dir_path + r"/test/inputpoint/inputpoint.dbf"            
+        outshp = dir_path + r"/test/inputpoint/polygon.shp"        
         with fiona.open(self.shp) as src:
-            meta = src.meta
-            meta['schema']['properties'].update({'dbscan': 'int'})
-            polygons = [pol for pol in src]
- 
-        with fiona.open (outshp, 'w', **meta) as output: 
+            meta = src.meta            
+            with fiona.open (outshp, 'w', **meta) as output: 
+                #iterate through polygons
+                for polygon in src:            
+                    output.write(polygon)
+        print(outshp[:-4]+".dbf")
+        if os.path.exists(outshp[:-4]+".dbf"):
+            #os.remove(outshp[:-4]+".dbf")
+            shutil.copy(attr_p,outshp[:-4]+".dbf")
+            print("finish update field")            
+        output.close()
+        src.close()
 
-        # iterate through points 
-            for i, pt in enumerate(points):
-                point = shape(pt['geometry'])
-            #iterate through polygons
-                for j, poly in enumerate(polygons):
-                    if point.within(shape(poly['geometry'])):
-                    # sum of attributes values
-                    #polygons[j]['properties']['dbscan'] = points[i]['properties']['dbscan']
-                        poly['properties']['dbscan'] = points[i]['properties']['dbscan']
-                        output.write(poly)
-                    #arrint.append(points[i]['properties']['dbscan'])
-                    
+        
+    def global_break(self):
+        """Calculate break value between global extreme value (minimum or maximum) and it's nearest (geometric) neighbour.
+            
+            Returns:
+                break_values (dict): Dictionary with break values e.g. '{"Min": 0.1, "Max": 10.3}'
+        """
+        break_values = {}
+        # SQL query to get the break between global minimum and nearest neighbor
+        sql_global_min_break = """SELECT ((Center + Neighbor) / 2) AS break 
+                                    FROM neighborpairs 
+                                        WHERE CenterID != PolygonID 
+                                        ORDER BY Center ASC, ABS(Difference) ASC 
+                                        LIMIT 1;"""
+        cur.execute(sql_global_min_break)
+        break_values["Min"] = cur.fetchone()[0] # Return only first value of tuple
+
+        # SQL query to get the break between global maxmimum and nearest neighbor
+        sql_global_max_break = """SELECT ((Center + Neighbor) / 2) AS break 
+                                    FROM neighborpairs 
+                                        WHERE CenterID != PolygonID 
+                                        ORDER BY Center DESC, ABS(Difference) ASC 
+                                        LIMIT 1;"""
+        cur.execute(sql_global_max_break)
+        break_values["Max"] = cur.fetchone()[0] # Return only first value of tuple
+
+        return break_values
+    
+    def quantile(self, values, classes=5):
+        """Quantum GIS quantile algorithm in Python
+        
+        Returns values taken at regular intervals from the cumulative 
+        distribution function (CDF) of 'values'.
+
+        FROM qgis_classification.py
+
+        Args:
+            values (list): list of values
+            classes (int): number of desired classes
+
+        Returns:
+            breaks (list)"""
+        values.sort()
+        n = len(values)
+        breaks = []
+        for i in range(classes):
+            q = i / float(classes)
+            a = q * n
+            aa = int(q * n)
+            r = a - aa
+            Xq = (1 - r) * values[aa] + r * values[aa+1]
+            breaks.append(Xq)
+        breaks.append(values[n-1])
+        return breaks
+
+    def get_inbetween_values(self):
+        """ Selects and returns all values except global extremes given values neighborPairs table
+
+        
+            Returns:
+                values (list)
+        """
+        values = []
+        sql_query = """SELECT DISTINCT Center 
+                        FROM neighborPairs;"""
+        cur.execute(sql_query)
+        results = cur.fetchall()
+        values = [result[0] for result in results]
+        del values[0]
+        del values[-1]
+        return values
+    
+    def equal_interval(self, start, end, cls_num):
+        """ Creates equidistant break values
+
+            Credits: https://www.geeksforgeeks.org/python-equidistant-element-list/
+
+            Args:
+                start: start value
+                end: end value
+        
+            Returns:
+                List of breaks
+
+        """
+        equal_brks = []
+        for x in range(cls_num):
+            if x == 0:
+                pass
+            else:
+                equal_brks.append(start + x * (end - start) / cls_num)
+
+        return equal_brks
+    
     @version_check
     def generate_output(self, fout):
         """Generates spatial context defined localextreme breaks with respect to
@@ -101,20 +194,79 @@ class aChor(object):
         # create custom counters with distinct initial values for display
         brk_counter = 1 # we start with initally 1 break
         cls_counter = 2 # and with 1 break you alread have 2 classes
-        for i in range(0, self.brk_num):            
-            brk_val, no_segment_left = self.breaks()
-            print("Class: {}, Breakvalue: {}".format(cls_counter, brk_val))
-            if no_segment_left == True and not brk_counter == self.brk_num:
-                print("No segments left in database")
-                brks.append(brk_val)
-                brks = self.desired_breaks(brks, self.brk_num)
-                break
-            brks.append(brk_val)
+        if self.method == 71 or self.method == 72:
+            global_brks = self.global_break()
+            # APPEND Global Min value to brks
+            global_min_brk = global_brks["Min"]
+            brks.append(global_min_brk)
+            print("Break: {}, Breakvalue: {}".format(brk_counter, global_min_brk)+",  Globalmin")
             cls_counter += 1
             brk_counter += 1
-        else: 
-            print("{} breaks/{} classes generated.".format(self.brk_num, self.cls))     
-        [writer.writerow([brk]) for brk in brks]     
+            # APPEND Global Max value to brks
+            global_max_brk = global_brks["Max"]
+            brks.append(global_max_brk)
+            print("Break: {}, Breakvalue: {}".format(brk_counter, global_max_brk)+",  Globalmax")
+            cls_counter += 1
+            brk_counter += 1
+            # Global Max/Min with quantile classification inbetween
+            if self.method == 71:
+                #brk_num_quantiles = self.brk_num - 2
+                cls_quantiles = self.cls - 2
+                # Pass all values between global min break and global max break do quantile function
+                inbetween_values = self.get_inbetween_values()
+                print("Vales:"+str(inbetween_values))
+                quantiles = self.quantile(inbetween_values, cls_quantiles)
+                for counter, brk in enumerate(quantiles):
+                    if counter != 0 and counter != cls_quantiles:
+                        brks.append(brk)
+                        print("Break: {}, Breakvalue: {}".format(brk_counter, brk))
+                        cls_counter += 1
+                        brk_counter += 1                        
+            # Global Max/Min with equidistant classification inbetween
+            else:
+                # Classifiy breaks between global breaks with equistant method
+                equidist_brks = self.equal_interval(brks[0], brks[-1], self.cls - 2)
+                for brk in equidist_brks:
+                    brks.append(brk)
+                    print("Break: {}, Breakvalue: {}".format(brk_counter, brk))
+                    cls_counter += 1
+                    brk_counter += 1
+
+            print("{} breaks/{} classes generated.".format(self.brk_num, self.cls)) 
+            [writer.writerow([brk]) for brk in brks] # Write to csv
+        else:
+            for i in range(0, self.brk_num):     
+                if (self.method <= 3 or self.method ==73) and i == 0:
+                    #prioritise return global extremes
+                    global_brks = self.global_break()
+                    if self.method <= 2 or self.method == 73:
+                        # APPEND Global Max value to brks
+                        global_max_brk = round(global_brks["Max"],4)
+                        brks.append(global_max_brk)                
+                        print("Break: {}, Breakvalue: {}".format(brk_counter, global_max_brk)+",  Globalmax")
+                        cls_counter += 1
+                        brk_counter += 1
+                    if self.method == 1 or self.method == 3 or self.method == 73:
+                        # APPEND Global Min value to brks
+                        global_min_brk = round(global_brks["Min"],4)
+                        brks.append(global_min_brk)                
+                        print("Break: {}, Breakvalue: {}".format(brk_counter, global_min_brk)+",  Globalmin")
+                        cls_counter += 1
+                        brk_counter += 1                   
+                            
+                if brk_counter <= self.brk_num:
+                    brk_val, no_segment_left = self.breaks()
+                    print("Break: {}, Breakvalue: {}".format(brk_counter, brk_val))
+                    if no_segment_left == True and not brk_counter == self.brk_num:
+                        print("No segments left in database")
+                        brks.append(brk_val)
+                        brks = self.desired_breaks(brks, self.brk_num)
+                        break
+                    brks.append(brk_val)
+                    cls_counter += 1
+                    brk_counter += 1
+            print("{} breaks/{} classes generated.".format(self.brk_num, self.cls))                     
+            [writer.writerow([brk]) for brk in brks]     
 
     def desired_breaks(self, brks, brk_num):
         """Creates breaks up to the desired class amount
@@ -136,12 +288,12 @@ class aChor(object):
         brk_counter = len(brks) # get the number of already created breaks
         cls_counter = brk_counter + 1 # existing breaks + 1 yields class amount
         while len(brks) < (len(temp_brks)*2)-1:
-            residual_brk = ( brks_diff[i][1] + brks_diff[i][2] ) / 2
+            residual_brk = round(( brks_diff[i][1] + brks_diff[i][2] ) / 2,4)
             brks.append(residual_brk)
             i += 1
             brk_counter += 1
             cls_counter += 1
-            print("Class: {}, Breakvalue: {}".format(cls_counter, residual_brk))
+            print("Break: {}, Breakvalue: {}".format(brk_counter, residual_brk))
             if len(brks) == brk_num:
                 print("{} breaks/{} classes generated.".format(self.brk_num, self.cls))
                 return brks
@@ -290,8 +442,8 @@ class aChor(object):
         os.chdir(plugin_dir_qgis)
         
         if not os.path.isdir('tmp'): os.mkdir('tmp') 
-        if self.method == 6:
-            inputshp = r"test/inputpoint/join_poly.shp"
+        if self.method == 4 or self.method == 6:
+            inputshp = r"test/inputpoint/polygon.shp"
         else:
             inputshp = self.shp
         outputshp = r"tmp/inputshape.shp"
@@ -344,7 +496,7 @@ class aChor(object):
                         subval = round(otherfeature['properties'][val],4)
                         distance = round((geometry.centroid.distance(othergeometry.centroid)),3)
                         diff = round((objval-subval),4)
-                        if self.method <= 5:
+                        if (self.method <= 5 or self.method >= 71):
                         # All others method
                             db_neighborpairs_insert = [feature['properties'][fid],
                                                        otherfeature['properties'][fid],
@@ -444,7 +596,7 @@ class aChor(object):
             source.close()
             
             # Neighours method
-            if (self.method == 5):
+            if (self.method == 5 or self.method == 73):
                 cur.execute("""
                         SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
                         where (nb."Difference") > {}
@@ -584,7 +736,7 @@ class aChor(object):
     ################################################################################
     
         # sql statement for neighbors
-        elif (self.method == 5):
+        elif (self.method == 5  or self.method == 73):
             sql_neighbors = """
             SELECT nb."CenterID", ABS(nb."Difference"), loc."Note" 
                   FROM "neighborPairs" nb, "locExtreme" loc
@@ -691,7 +843,7 @@ class aChor(object):
                                         GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
                                         ORDER BY loc."min" DESC;""")
                  con.commit()
-            if self.method == 5:
+            if self.method == 5  or self.method == 73:
                 cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
                                         FROM "locExtremePairs" loc, "neighborPairs" nb
@@ -876,7 +1028,7 @@ if __name__ == "__main__":
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
-    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors, 6=clusters, 71=globalextreme', type=int)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors, 6=clusters, 7=globalextreme', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
     args = parser.parse_args()
 

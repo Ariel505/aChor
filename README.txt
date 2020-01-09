@@ -1,4 +1,4 @@
-aChor
+﻿aChor
 Task oriented data classification for choropleth maps (German Research Foundation funded)
 
 
@@ -38,7 +38,7 @@ Notes:
 2.You can also run the classification from OSGeo4W command shell. 
 
 Usage: python class_achor.py [class_num] [sweep_interval] [field_name] [shapefile] [method]
-       method: 1: Localextremes (max and min) 2: Localmax 3: Localmin 4: Hotspot 5: Neighbors 6: Clusters
+       method: 1: Localextremes (max and min) 2: Localmax 3: Localmin 4: Hotspot 5: Neighbors 6: Clusters 71:Global extreme Quantile 72:Global extreme Equal Interval 73:Global extreme Neighbors 
 for example: python class_achor.py 10 0.2 SUMME Hamburg.shp -m 1 
 
 

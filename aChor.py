@@ -41,27 +41,24 @@ from .aChor_dialog import aChorDialog
 import os.path
 import os, sys, subprocess, shlex, shutil
 from subprocess import Popen, PIPE
-from osgeo import ogr
+from osgeo import ogr, osr
 import qgis.utils
 import fiona, logging, csv, time
+from fiona.crs import from_epsg
+from pyproj import Proj, transform
 from shapely.geometry import shape, mapping
-import pysal
+import pysal, math
 from pysal.esda.getisord import *
 from pysal.weights.Distance import DistanceBand
-
 import numpy as np
-
-#sys.setrecursionlimit(8000)
-
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.datasets.samples_generator import make_blobs
 from sklearn.preprocessing import StandardScaler
-import dbf
-   
+import dbf, webbrowser
+
 class aChor:
     """QGIS Plugin Implementation."""
-
     
     def __init__(self, iface):
         """Constructor.
@@ -202,15 +199,39 @@ class aChor:
         self.dlg.rdb1.clicked.connect(self.setDisable)
         self.dlg.rdb2.clicked.connect(self.setDisable)
         self.dlg.rdb3.clicked.connect(self.setDisable)
+        self.dlg.rdb4.clicked.connect(self.setDisable)
         self.dlg.rdb5.clicked.connect(self.setDisable)
         self.dlg.rdb6.clicked.connect(self.setDisable)
+        self.dlg.rdb7.clicked.connect(self.setunChecked)
+        self.dlg.cb1.clicked.connect(self.setChecked)
+        self.dlg.cb2.clicked.connect(self.setChecked)
+        self.dlg.cb3.clicked.connect(self.setChecked)
         rx3 = QRegExp('^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$')
         validator3 = QRegExpValidator(rx3)
         self.dlg.linefdb.setValidator(validator3)        
         self.dlg.rdb4.clicked.connect(self.setEnable)
         self.dlg.rdb6.clicked.connect(self.setEnable)
+        self.dlg.btn_help.clicked.connect(self.open_webbrowser)
 
-
+    def open_webbrowser(self):
+        webbrowser.open('http://www.geomatik-hamburg.de/g2lab/content/aChor_README.html') 
+        
+    def setChecked(self):
+        self.dlg.rdb7.setChecked(True)
+    
+    def setunChecked(self):
+        self.dlg.cb1.setChecked(True)
+        self.dlg.rdb1.setChecked(False)
+        self.dlg.rdb2.setChecked(False)
+        self.dlg.rdb3.setChecked(False)
+        self.dlg.rdb4.setChecked(False)
+        self.dlg.rdb5.setChecked(False)
+        self.dlg.rdb6.setChecked(False)
+        self.dlg.cb1.setDisabled(False)
+        self.dlg.cb2.setDisabled(False)
+        self.dlg.cb3.setDisabled(False)
+        self.set_disLabel()
+        
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -220,7 +241,14 @@ class aChor:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
-
+    
+    def set_disLabel(self):
+        self.dlg.label_5.setDisabled(True)
+        self.dlg.label_7.setDisabled(True)
+        self.dlg.linefdb.setDisabled(True)
+        self.dlg.label_8.setDisabled(True)
+        self.dlg.lineps.setDisabled(True)
+        
     def setEnable(self):        
         if self.dlg.rdb4.isChecked():
             self.dlg.label_5.setDisabled(False)
@@ -228,19 +256,20 @@ class aChor:
             self.dlg.linefdb.setDisabled(False)
             self.load_comboBox()
             self.dlg.linefdb.setText(str(round(thresh,4)))
+            self.dlg.label_8.setDisabled(True)
+            self.dlg.lineps.setDisabled(True)
         if self.dlg.rdb6.isChecked():
             self.dlg.label_8.setDisabled(False)
             self.dlg.lineps.setDisabled(False)
             self.dlg.lineps.setText('0.5')
     
     def setDisable(self):
-        self.dlg.label_5.setDisabled(True)
-        self.dlg.label_7.setDisabled(True)
-        self.dlg.linefdb.setDisabled(True)
-        self.dlg.label_8.setDisabled(True)
-        self.dlg.lineps.setDisabled(True)
+        self.dlg.rdb7.setChecked(False)
+        self.dlg.cb1.setDisabled(True)
+        self.dlg.cb2.setDisabled(True)
+        self.dlg.cb3.setDisabled(True)
+        self.set_disLabel()     
 
-        
     def clear_fields(self):
         """Clearing the fields when layers are changed"""
         self.dlg.comboBox.clear()
@@ -270,8 +299,8 @@ class aChor:
         strname = []
         #only Float or Integer field types will be shown in combobox
         for field in selectedLayer.fields():
-            ftype = str(field.type())
-            if ftype == '2' or ftype == '6':
+            ftype = str(field.type())            
+            if ftype == '2' or ftype == '4' or ftype == '6':
                 strname.append(field.name())
                 
         self.dlg.comboBox.addItems(strname)
@@ -284,9 +313,12 @@ class aChor:
         global type
         global thresh
         type = inLayer.GetLayerDefn().GetGeomType()
-
-        if type == 3:  # is a polygon
+        if type == 3:  # is a polygon   
             thresh = pysal.min_threshold_dist_from_shapefile(path)
+            if float(thresh) < 1: #convert decimal degree to meters
+                thresh = round(thresh * 84244.43662,0)
+            else:
+                thresh = round(thresh,0)
             self.suggest_sweep(str(path).strip(), self.dlg.comboBox.currentText())
             selectedFieldIndex = self.dlg.comboBox.currentIndex()
             if selectedFieldIndex < 0:
@@ -345,33 +377,37 @@ class aChor:
 
         with fiona.open(inp) as source:
             features = list(source)
-
         global achor_max_val
-        global achor_min_val
-        suggestion = 1
-        
+        global achor_min_val#
+        global suggestion
         try:
             achor_max_val = max(val['properties'][attr] for val in features)
             achor_min_val = min(val['properties'][attr] for val in features)
         except KeyError:
             return
         
-        if (achor_max_val > achor_min_val):
+        if (achor_max_val or achor_min_val):
             valrange = achor_max_val-achor_min_val
     
             if 0 < valrange < 1:
                 suggestion = valrange/100
-            elif 1 < valrange < 100:
-                suggestion = round(valrange/(valrange*1.1),2)
-            elif 100 < valrange < 1000:
-                suggestion = round(valrange/(valrange*0.37),2)
-            elif valrange > 1000:
-                suggestion = valrange/(valrange/2)
+            elif 1 <= valrange < 30:
+                suggestion = round(valrange/(valrange*3.33),4)
+            elif 30 <= valrange < 100:
+                suggestion = round(valrange/(valrange*2),4)
+            elif 100 <= valrange < 999:
+                suggestion = round(valrange/(valrange*0.37),4)
+            elif 1000 < valrange < 4999:
+                suggestion = int(valrange/(valrange/2))
+            elif 5000 < valrange < 9999:
+                suggestion = int(valrange / 1000)
+            elif valrange >= 10000:
+                suggestion = int(valrange / 2000)
             self.dlg.lineEdit2.setText(str(suggestion))
         source.close()
         
     def create_colorrange(self, i_step, i_start, i_stop, mid=None):
-        import math
+        
         """Takes a number of steps to create a color range for given hex color values"""
         def get_range(step, start, stop):
             try:
@@ -485,6 +521,8 @@ class aChor:
             outFeature = ogr.Feature(outLayerDefn)
             # Add field values from input Layer
             for j in range(0, inLayerDefn.GetFieldCount()):
+                print(inFeature.GetField(j))
+                print(outLayerDefn.GetFieldDefn(j).GetNameRef())
                 outFeature.SetField(outLayerDefn.GetFieldDefn(j).GetNameRef(), inFeature.GetField(j))
             # Set geometry
             geom = inFeature.GetGeometryRef()
@@ -527,23 +565,44 @@ class aChor:
         inDataSource.Destroy()
         outDataSource.Destroy()
 
-        #new_layer = self.iface.addVectorLayer(outfilename + ".shp", str(os.path.basename(os.path.normpath(outfilename))),
-        #                                      "ogr")
-        #if not new_layer:
-        #    QMessageBox.information(self.dlg, self.tr("New Layer"), self.tr("Layer Cannot be Loaded"), QMessageBox.Ok)
-    
+
     def getCentroid(self,shp,outpoint):
+        #for hotspot and cluster method, when wgs84, reproject into EPSG3857 
         with fiona.open(shp) as src:
-            meta = src.meta
-            meta['schema']['geometry'] = 'Point'
-            meta['schema']['properties'].update({'cX': 'float:15.13','cY': 'float:15.13','dbscan': 'int'})
-            with fiona.open(outpoint, 'w', **meta) as dst:
+            #meta = src.meta
+            schema = src.schema
+            schema['geometry'] = 'Point'
+            schema['properties'].update({'cX': 'float:15.13','cY': 'float:15.13','dbscan': 'int'})
+            check = False
+            dest_crs = src.crs
+            for key in dest_crs.keys():                
+                try:
+                    if dest_crs[key] == 'epsg:4326':
+                        check = True            
+                except ValueError:
+                    pass
+            if check == True:                
+                dest_crs = from_epsg(3857)
+                logging.info("crs:WGS84, reproject to 3857")
+            
+            original = Proj(src.crs) 
+            destination = Proj('+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs')
+            #with fiona.open(outpoint, 'w', crs=epsg,**meta) as dst:
+            with fiona.open(outpoint,'w',schema=schema,crs=dest_crs,driver=src.driver) as dst:
                 for f in src:
                     centroid = shape(f['geometry']).centroid                    
                     f['geometry'] = mapping(centroid)
-                    f['properties']['cX'] = round(float(f['geometry']['coordinates'][1]),13)
-                    f['properties']['cY'] = round(float(f['geometry']['coordinates'][0]),13)
-                    f['properties']['dbscan'] = 0
+                    long =  f['geometry']['coordinates'][0]
+                    lat =  f['geometry']['coordinates'][1]
+                    if check == True:                          
+                        x,y = transform(original,destination,long,lat)
+                        f['geometry']['coordinates'] = (x,y)
+                        f['properties']['cX'] = round(float(x),13)
+                        f['properties']['cY'] = round(float(y),13)
+                    else:                        
+                        f['properties']['cX'] = round(float(long),13)
+                        f['properties']['cY'] = round(float(lat),13)
+                    f['properties']['dbscan'] = 0                    
                     dst.write(f)
             dst.close()
         src.close()
@@ -616,13 +675,13 @@ class aChor:
                 interval = self.dlg.lineEdit2.text()
                 field = self.dlg.comboBox.currentText()
                 shp = str(path)
-                if self.dlg.rdb3.isChecked():
+                if self.dlg.rdb1.isChecked():
                     method = 1
                     display = 'localextreme'
-                elif self.dlg.rdb1.isChecked():
+                elif self.dlg.rdb2.isChecked():
                     method = 2
                     display = 'localmax'
-                elif self.dlg.rdb2.isChecked():
+                elif self.dlg.rdb3.isChecked():
                     method = 3
                     display = 'localmin'
                 elif self.dlg.rdb4.isChecked():
@@ -634,9 +693,19 @@ class aChor:
                 elif self.dlg.rdb6.isChecked():
                     method = 6
                     display = 'cluster'
-                elif self.dlg.rdb7.isChecked():
-                    method = 7
-                    display = 'globalextreme'
+                elif self.dlg.cb1.isChecked():
+                        method = 71
+                        display = 'globalextreme-Quantile'
+                elif self.dlg.cb2.isChecked():
+                        method = 72
+                        display = 'globalextreme-Equal'
+                elif self.dlg.cb3.isChecked():
+                        method = 73
+                        display = 'globalextreme-Neighbor' 
+                else:
+                    method = 1
+                    display = 'localextreme'
+                    
                 myVectorLayer = QgsVectorLayer(path, display, 'ogr')
 
                 #QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
@@ -674,33 +743,31 @@ class aChor:
                     for feature in inLayer1:
                         geometry = feature.GetGeometryRef()
                         xy = (geometry.GetX(), geometry.GetY())
-                        t = t + (xy,)
-                    
-                    inDataSource1.Destroy()
-                    
-                    if method == 4:
-                        thresh = pysal.min_threshold_dist_from_shapefile(path)
-                        number = round(float(self.dlg.linefdb.text()),4)               
-                        if number and self.dlg.rdb4.isChecked() and  method == 4:
-                                QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
-                                            self.tr("Default Fixed Distance Band: "+str(round(thresh,4))+'\n User Defined: '+self.dlg.linefdb.text()), QMessageBox.Ok)
-                                
+                        t = t + (xy,)                  
+                    if method == 4:                        
+                        number = round(float(self.dlg.linefdb.text()),0)        
+                        #thresh = pysal.min_threshold_dist_from_shapefile(path)
+                        #if float(thresh) < 1: #WGS84
+                            #threshold = round(thresh,6)
+                            #w = DistanceBand(t, int(threshold), p=2, binary=False)
+                            #logging.info("Hotspot: Fixed Distance Band: "+threshold+", WGS84")
+                        #else:
+                        threshold = number
+                        w = DistanceBand(t, int(number), p=2, binary=False)
+                        logging.info("Hotspot: Fixed Distance Band: "+self.dlg.linefdb.text())
                         #Run Getis-Ord statistics
                         outfilename = strdir+"/test/hotspotshp"
                         type_w = "B"
                         permutationsValue = 9999                   
-                        np.random.seed(12345)
-                        threshold = number
-                        w = DistanceBand(t, int(number), p=2, binary=False)
-                        logging.info("Hotspot: Fixed Distance Band: "+self.dlg.linefdb.text())
-    
+                        np.random.seed(12345)                    
+
                         statistics = G_Local(y, w, star=True, transform=type_w, permutations=permutationsValue)
-                        self.write_file(outfilename, statistics, layerName, inLayer, 
-                                        inDataSource, 
-                                        y, threshold)                      
-                      
-                        shp=outfilename+".shp"      
-                   
+                        self.write_file(outfilename, statistics, layerName, inLayer1, 
+                                        inDataSource1, 
+                                        y, threshold)                 
+                        #shp=outfilename+".shp"      
+                        #inDataSource1.Destroy()
+                        
                 if method == 6:
                     # Generate samples
                     centers = [[0, -1], [12, 5], [30, 101]]
@@ -726,7 +793,8 @@ class aChor:
                             except ValueError: 
                                 pass
                     dbfname.close()
-                    
+                    f.close()
+                    inDataSource1.Destroy()
                     # Compute DBSCAN   
                     data = np.loadtxt(open(csvname, "rb"), delimiter=",", skiprows=1)
                     nrows = data.shape[0]
@@ -746,15 +814,13 @@ class aChor:
                     for record in outdbf:
                         with record as r:
                             r.dbscan=db_labels[j]
-                            #print('write rows:'+str(j)+', value:'+str(db_labels[j]))
                             j +=1
-
                     if n_clusters_db_ <= 1:
                         print('Silhouette Coefficient: NaN (too few clusters)')
                         QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
                                             self.tr("too few clusters: "+db_labels+"/n Please change eps to get better result"), QMessageBox.Ok)
                     outdbf.close()
-                    
+
                 sys.argv.append(classnum)
                 sys.argv.append(interval)
                 sys.argv.append(field)
@@ -786,7 +852,7 @@ class aChor:
                 minval = achor_min_val
                 while i < int(classnum)-1:                  
                     colorstr.append(str(minval) + '_' + sortedlist[i].strip())                        
-                    minval = round(float(sortedlist[i].strip()),3)
+                    minval = round(float(sortedlist[i].strip()),4)
                     logging.info('breaks:'+sortedlist[i])
                     i += 1
                 

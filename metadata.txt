@@ -4,7 +4,7 @@
 name=Task-Oriented Data Classification for Polygon
 qgisMinimumVersion=3.0
 description=Task-Oriented Data Classification for Choropleth Maps  <br/>  Pre-request python packages: fiona, shapely, pysal, rtree, sklearn, dbf
-version=0.8
+version=1.0
 author=Prof. Jochen Schiewe, M.Sc. Juiwen Chang, Philipp Loose
 email=juiwen.chang@hcu-hamburg.de
 
@@ -19,7 +19,7 @@ repository=https://gitlab.com/g2lab/aChor
 # Recommended items:
 
 # Changelog:
- changelog=add cluster method
+ changelog=add global extremes methods
 
 # Tags are comma separated with spaces allowed
 tags=python, classification, Choropleth Maps, Local Extreme Values, Hotspot, Clusters, polygon, Vector, Style
