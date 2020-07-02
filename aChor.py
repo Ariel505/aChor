@@ -3,7 +3,7 @@
 /***************************************************************************
  aChor - Task oriented data classification for choropleth maps
                               -------------------
-        last update version  : v0.6, 2018-10-31
+        last update version  : v0.6, 2020-05-01
         GitHub               : https://github.com/Ariel505/aChor
         copyright            : (C) 2018 by Hafencity university Hamburg
         email                : juiwen.chang@hcu-hamburg.de
@@ -28,12 +28,9 @@
  ***************************************************************************/
 """
 from PyQt5.QtCore import *
-#QSettings, QTranslator, qVersion, QCoreApplication, QRegExp
 from PyQt5.QtGui import QIcon, QColor, QRegExpValidator
 from PyQt5.QtWidgets import QAction, QLineEdit, QDesktopWidget, QMessageBox, QDockWidget
 from qgis.core import *
-#from qgis.core import QgsProject, QgsVectorLayer, QgsRenderContext
-#QgsSymbolV2, QgsRendererRangeV2, QgsGraduatedSymbolRendererV2, QgsMapLayerRegistry
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
@@ -95,7 +92,8 @@ class aChor:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'aChor')
         self.toolbar.setObjectName(u'aChor')
-
+        self.load_comboBox()
+        
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -188,8 +186,8 @@ class aChor:
         return action
 
     def initGui(self):
-        """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
+        """Create the menu entries and toolbar icons inside the QGIS GUI."""        
+        
         icon_path = ':/plugins/aChor/icon.png'
         self.add_action(
             icon_path,
@@ -203,6 +201,7 @@ class aChor:
         self.dlg.rdb5.clicked.connect(self.setDisable)
         self.dlg.rdb6.clicked.connect(self.setDisable)
         self.dlg.rdb7.clicked.connect(self.setunChecked)
+        self.dlg.rdb8.clicked.connect(self.setDisable)
         self.dlg.cb1.clicked.connect(self.setChecked)
         self.dlg.cb2.clicked.connect(self.setChecked)
         self.dlg.cb3.clicked.connect(self.setChecked)
@@ -212,7 +211,7 @@ class aChor:
         self.dlg.rdb4.clicked.connect(self.setEnable)
         self.dlg.rdb6.clicked.connect(self.setEnable)
         self.dlg.btn_help.clicked.connect(self.open_webbrowser)
-
+        
     def open_webbrowser(self):
         webbrowser.open('http://www.geomatik-hamburg.de/g2lab/content/aChor_README.html') 
         
@@ -227,6 +226,7 @@ class aChor:
         self.dlg.rdb4.setChecked(False)
         self.dlg.rdb5.setChecked(False)
         self.dlg.rdb6.setChecked(False)
+        self.dlg.rdb8.setChecked(False)
         self.dlg.cb1.setDisabled(False)
         self.dlg.cb2.setDisabled(False)
         self.dlg.cb3.setDisabled(False)
@@ -248,6 +248,11 @@ class aChor:
         self.dlg.linefdb.setDisabled(True)
         self.dlg.label_8.setDisabled(True)
         self.dlg.lineps.setDisabled(True)
+        self.dlg.label_9.setDisabled(True)
+        self.dlg.cBox2.setDisabled(True)
+        if self.dlg.rdb8.isChecked():
+            self.dlg.label_9.setDisabled(False)
+            self.dlg.cBox2.setDisabled(False)
         
     def setEnable(self):        
         if self.dlg.rdb4.isChecked():
@@ -267,12 +272,13 @@ class aChor:
         self.dlg.rdb7.setChecked(False)
         self.dlg.cb1.setDisabled(True)
         self.dlg.cb2.setDisabled(True)
-        self.dlg.cb3.setDisabled(True)
+        self.dlg.cb3.setDisabled(True)        
         self.set_disLabel()     
 
     def clear_fields(self):
         """Clearing the fields when layers are changed"""
         self.dlg.comboBox.clear()
+        self.dlg.cBox2.clear()
 
     def load_comboBox(self):
         """Load the fields into combobox when layers are changed"""
@@ -297,14 +303,19 @@ class aChor:
         self.clear_fields()
         
         strname = []
+        catename = []
+        
         #only Float or Integer field types will be shown in combobox
         for field in selectedLayer.fields():
             ftype = str(field.type())            
             if ftype == '2' or ftype == '4' or ftype == '6':
                 strname.append(field.name())
+            else:
+                catename.append(field.name())
                 
         self.dlg.comboBox.addItems(strname)
-
+        self.dlg.cBox2.addItems(catename)
+        
         (path, layer_id) = selectedLayer.dataProvider().dataSourceUri().split('|')
 
         inDriver = ogr.GetDriverByName("ESRI Shapefile")
@@ -374,15 +385,29 @@ class aChor:
             return [layers, False]
         
     def suggest_sweep(self, inp, attr):
-
+        
+        global suggestion
+        global achor_max_val
+        global achor_min_val
+        
         with fiona.open(inp) as source:
             features = list(source)
-        global achor_max_val
-        global achor_min_val#
-        global suggestion
+        
         try:
-            achor_max_val = max(val['properties'][attr] for val in features)
-            achor_min_val = min(val['properties'][attr] for val in features)
+            i = 0
+            for val in features:
+                if not(val['properties'][attr] is None):
+                #achor_max_val = max(val['properties'][attr] for val in features)
+                    value = val['properties'][attr] 
+                    if i == 0:
+                        achor_max_val = value
+                        achor_min_val = value
+                    if value > achor_max_val:
+                        achor_max_val = value
+                    if value < achor_min_val:
+                        achor_min_val = value
+                    i+=1
+
         except KeyError:
             return
         
@@ -403,9 +428,12 @@ class aChor:
                 suggestion = int(valrange / 1000)
             elif valrange >= 10000:
                 suggestion = int(valrange / 2000)
-            self.dlg.lineEdit2.setText(str(suggestion))
+            
         source.close()
-        
+       
+        if suggestion:
+                self.dlg.lineEdit2.setText(str(suggestion))
+                
     def create_colorrange(self, i_step, i_start, i_stop, mid=None):
         
         """Takes a number of steps to create a color range for given hex color values"""
@@ -637,7 +665,6 @@ class aChor:
         if len(layers) == 0:
             return       
 
-
         #set regular expression
         rx = QRegExp('^[1-9]\d{1}$')
         validator = QRegExpValidator(rx)
@@ -674,6 +701,7 @@ class aChor:
                 classnum = self.dlg.lineEdit.text()
                 interval = self.dlg.lineEdit2.text()
                 field = self.dlg.comboBox.currentText()
+                calfd = self.dlg.cBox2.currentText()
                 shp = str(path)
                 if self.dlg.rdb1.isChecked():
                     method = 1
@@ -701,7 +729,10 @@ class aChor:
                         display = 'globalextreme-Equal'
                 elif self.dlg.cb3.isChecked():
                         method = 73
-                        display = 'globalextreme-Neighbor' 
+                        display = 'globalextreme-Neighbor'
+                elif self.dlg.rdb8.isChecked():
+                        method = 8
+                        display = 'nested'
                 else:
                     method = 1
                     display = 'localextreme'
@@ -820,13 +851,21 @@ class aChor:
                         QMessageBox.warning(self.dlg.show(), self.tr("aChor:Warning"),
                                             self.tr("too few clusters: "+db_labels+"/n Please change eps to get better result"), QMessageBox.Ok)
                     outdbf.close()
-
+                if not hasattr(sys, 'argv'):
+                    sys.argv  = ['']
                 sys.argv.append(classnum)
                 sys.argv.append(interval)
                 sys.argv.append(field)
                 sys.argv.append(shp)
                 sys.argv.append(method)
-                cmd=py_executable+" "+strdir+"/class_achor.py "+classnum+" "+str(interval)+" "+field+" "+shp.strip().replace('\\',r'/')+" -m "+ str(method)
+                
+                cmd=py_executable+" "+strdir+"/class_achor.py "+classnum+" "+str(interval)+" "+field+" "+shp.strip().replace('\\',r'/')
+                
+                sys.argv.append(calfd)
+                cmd+= " " + calfd
+                
+                cmd += " -m "+ str(method)
+                
                 logging.info("Starting main script")
                 QMessageBox.warning(self.dlg.show(), self.tr("aChor:Info"),
                      self.tr("Starting Main Script... Please wait for response"), QMessageBox.Ok)
@@ -857,9 +896,12 @@ class aChor:
                     i += 1
                 
                 # create colorramps according to the amount of classes/breaks
-                white_blue = self.create_colorrange(int(classnum), '#FFFFFF', '#3b71c6') #default
-                green_yellow_red = self.create_colorrange(int(classnum), '#0ac956', '#f7411d', '#f7e81d')
-                blue_beige_red = self.create_colorrange(int(classnum), '#4158f4', '#f94545', '#f7b559')
+                white_blue = self.create_colorrange(int(classnum), '#FFFFFF', '#3182bd') #default
+                white_purple = self.create_colorrange(int(classnum), '#FFFFFF', '#756bb1')
+                white_orange = self.create_colorrange(int(classnum), '#FFFFFF', '#e6550d')
+                yellow_cyan_blue = self.create_colorrange(int(classnum), '#edf8b1', '#2c7fb8', '#7fcdbb')
+                white_blue_green = self.create_colorrange(int(classnum), '#ece2f0', '#1c9099', '#a6bddb')
+                white_pink_purple = self.create_colorrange(int(classnum), '#FFFFFF', 'c51b8a', 'fa9fb5')
     
                 crange_selection = self.dlg.cBox.currentIndex() # get the selection from the gui
                 
@@ -867,9 +909,15 @@ class aChor:
                 if crange_selection == 0:
                     crange = white_blue
                 elif crange_selection == 1:
-                    crange = green_yellow_red
+                    crange = white_purple
                 elif crange_selection == 2:
-                    crange = blue_beige_red
+                    crange = white_orange                 
+                elif crange_selection == 3:
+                    crange = yellow_cyan_blue
+                elif crange_selection == 4:
+                    crange = white_blue_green
+                elif crange_selection == 5:
+                    crange = white_pink_purple
                     
                 color_ranges = []
                 for i in range(len(colorstr)-1):
