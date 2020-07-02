@@ -27,16 +27,18 @@ class aChor(object):
             return None
         return wrapper
     
-    def __init__(self, cls, swp, field, shp, method=1, memory=None):
+    def __init__(self, cls, swp, field, shp, calfd='', method=1, memory=None):
         
         self.cls = int(cls)
         self.brk_num = int(cls)-1
         self.swp = float(swp)
         self.field = str(field)
         self.shp = str(shp)
+        self.calfd = str(calfd)
         self.method = int(method)
         self.memory = memory
-        
+
+            
         if not memory:
             self.memory = ":memory:"
         else:
@@ -214,7 +216,7 @@ class aChor(object):
                 cls_quantiles = self.cls - 2
                 # Pass all values between global min break and global max break do quantile function
                 inbetween_values = self.get_inbetween_values()
-                print("Vales:"+str(inbetween_values))
+                #print("Vales:"+str(inbetween_values))
                 quantiles = self.quantile(inbetween_values, cls_quantiles)
                 for counter, brk in enumerate(quantiles):
                     if counter != 0 and counter != cls_quantiles:
@@ -308,8 +310,7 @@ class aChor(object):
         CREATE TABLE IF NOT EXISTS locExtreme(
             "PolygonID" "text" NOT NULL,
             "Note" "text",
-           CONSTRAINT "locExtreme_pkey" PRIMARY KEY ("PolygonID")
-
+          CONSTRAINT "locExt_pkey" PRIMARY KEY ("PolygonID") 
         )
         """        
         cur.execute(sql_locextreme)
@@ -361,6 +362,7 @@ class aChor(object):
         );
         """
         cur.execute(sql_localmaxpairs)
+        
         sql_localmaxpairs = """
         CREATE INDEX index_locMaxP ON locmaxPairs ("CenterID");
         """
@@ -473,170 +475,213 @@ class aChor(object):
             val = self.field
             cluster = 'dbscan'
             for feature in features:
-                objval = round(feature['properties'][val],4)
-                maxval = objval
-                minval = objval
-                cond = False
-                if self.method == 6:
-                    cid = feature['properties'][cluster]
-                j = 0
-                k = 0
-                geometry = shape(feature['geometry'])
+                if not(feature['properties'][val] is None):
+                    objval = round(feature['properties'][val],4)
+                    maxval = objval
+                    minval = objval
+                    cond = False
+                    if self.method == 6:
+                        cid = feature['properties'][cluster]
+                    elif self.method == 8:
+                        cid = feature['properties'][self.calfd]
+                    j = 0
+                    k = 0
+                    geometry = shape(feature['geometry'])
+                    
+                    for candidate in list(r.intersection(geometry.bounds)):
+                        
+                        otherfeature = features[candidate]  # using originals, not the copies from the index
+                        
+                        if feature is otherfeature:
+                            continue		    
+                        othergeometry = shape(otherfeature['geometry'])
+                        
+                        if geometry.intersection(othergeometry):
+                            if not(otherfeature['properties'][val] is None):
+                                subval = round(otherfeature['properties'][val],4)
+                                distance = round((geometry.centroid.distance(othergeometry.centroid)),3)
+                                diff = round((objval-subval),4)
+                                if (self.method <= 5 or self.method >= 71):
+                                # All others method
+                                    db_neighborpairs_insert = [feature['properties'][fid],
+                                                               otherfeature['properties'][fid],
+                                                               objval,
+                                                               subval,
+                                                               diff,
+                                                               distance,'','']
+                                    
+                                    cur.execute("""
+                                    INSERT INTO neighborpairs 
+                                        (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                                    """, db_neighborpairs_insert)
+                                    con.commit()
+                                # Cluster method
+                                if self.method == 6:
+                                    pid = otherfeature['properties'][cluster]
+                                    db_clusters_insert = [feature['properties'][fid],
+                                                           otherfeature['properties'][fid],
+                                                           objval,
+                                                           subval,
+                                                           diff,
+                                                           distance,
+                                                           cid,
+                                                           pid]
+                                
+                                    cur.execute("""
+                                INSERT INTO neighborpairs 
+                                    (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                                """, db_clusters_insert)
+                                    con.commit()
+                                
+                                # Nested method
+                                if self.method == 8:
+                                    pid = otherfeature['properties'][self.calfd]
+                                    db_nested_insert = [feature['properties'][fid],
+                                                           otherfeature['properties'][fid],
+                                                           objval,
+                                                           subval,
+                                                           diff,
+                                                           distance,
+                                                           cid,
+                                                           pid]
+                                    cur.execute("""
+                                INSERT INTO neighborpairs 
+                                    (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                                """, db_nested_insert)
+                                    con.commit()
+                                    
+                                if diff <= 0 and subval >= maxval:
+                                    cond = False
+                                    maxval = subval
+                                    k = 0
+                                if diff >= 0 and subval <= minval:
+                                    cond = False
+                                    minval = subval
+                                    j = 0
+                                if diff > 0 and objval > subval and objval >= maxval: # Local Max
+                                    cond = True
+                                    maxval = objval
+                                    k += 1
+                                if diff < 0 and objval < subval and objval <= minval: # Local Min
+                                    cond = True
+                                    minval = objval
+                                    j += 1
+                    if (self.method <= 3):             
+                        if cond == True and maxval >= objval and j == 0:
+                            db_locmax_insert = [feature['properties'][fid],
+                                                "localmax"]
+                            # if not cur fetchone fehlt!
+                            
+                            cur.execute("""
+                                    INSERT INTO locExtreme 
+                                          (PolygonID, Note) 
+                                           VALUES (?, ?);
+                                    """, db_locmax_insert)
+                            con.commit()
+                            
+                        if cond == True and minval <= objval and k == 0:
+                            db_locmin_insert = [feature['properties'][fid],
+                                                "localmin"]
+                            
+                            #if not cur fetchone fehlt!
+                            cur.execute("""
+                                    INSERT INTO locExtreme 
+                                            (PolygonID, Note) 
+                                            VALUES (?, ?);
+                                    """, db_locmin_insert)
+                            con.commit()
+                    else:
+                       # Hotspot method
+                       if (self.method == 4):
+                           g_bin = int(feature['properties']['Gi_Bin'])
+                           if (g_bin == 3):
+                               db_hotspot_insert = [feature['properties'][fid],
+                                                    "hotspot"]
+                               cur.execute("""
+                                        INSERT INTO locExtreme 
+                                                (PolygonID, Note) 
+                                                VALUES (?, ?);
+                                        """, db_hotspot_insert)
+                               con.commit()
+                           elif (g_bin == -3):
+                               db_coldspot_insert = [feature['properties'][fid],
+                                                    "coldspot"]
+                               cur.execute("""
+                                        INSERT INTO locExtreme 
+                                                (PolygonID, Note) 
+                                                VALUES (?, ?);
+                                        """, db_coldspot_insert)
+                               con.commit()                
+                        
+                source.close()
                 
-                for candidate in list(r.intersection(geometry.bounds)):
-                    
-                    otherfeature = features[candidate]  # using originals, not the copies from the index
-                    
-                    if feature is otherfeature:
-                        continue		    
-                    othergeometry = shape(otherfeature['geometry'])
-                    
-                    if geometry.intersection(othergeometry):
-                        
-                        subval = round(otherfeature['properties'][val],4)
-                        distance = round((geometry.centroid.distance(othergeometry.centroid)),3)
-                        diff = round((objval-subval),4)
-                        if (self.method <= 5 or self.method >= 71):
-                        # All others method
-                            db_neighborpairs_insert = [feature['properties'][fid],
-                                                       otherfeature['properties'][fid],
-                                                       objval,
-                                                       subval,
-                                                       diff,
-                                                       distance,'','']
-                            
-                            cur.execute("""
-                            INSERT INTO neighborpairs 
-                                (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-                            """, db_neighborpairs_insert)
-                            con.commit()
-                        # Cluster method
-                        if self.method == 6:
-                            pid = otherfeature['properties'][cluster]
-                            db_clusters_insert = [feature['properties'][fid],
-                                                   otherfeature['properties'][fid],
-                                                   objval,
-                                                   subval,
-                                                   diff,
-                                                   distance,
-                                                   cid,
-                                                   pid]
-                        
-                            cur.execute("""
-                        INSERT INTO neighborpairs 
-                            (CenterID, PolygonID, Center, Neighbor, Difference, Distance, CID, PID) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-                        """, db_clusters_insert)
-                            con.commit()
-                            
-                        if diff <= 0 and subval >= maxval:
-                            cond = False
-                            maxval = subval
-                            k = 0
-                        if diff >= 0 and subval <= minval:
-                            cond = False
-                            minval = subval
-                            j = 0
-                        if diff > 0 and objval > subval and objval >= maxval: # Local Max
-                            cond = True
-                            maxval = objval
-                            k += 1
-                        if diff < 0 and objval < subval and objval <= minval: # Local Min
-                            cond = True
-                            minval = objval
-                            j += 1
-                if (self.method <= 3):             
-                    if cond == True and maxval >= objval and j == 0:
-                        db_locmax_insert = [feature['properties'][fid],
-                                            "localmax"]
-                        # if not cur fetchone fehlt!
-                        
-                        cur.execute("""
-                                INSERT INTO locExtreme 
-                                      (PolygonID, Note) 
-                                       VALUES (?, ?);
-                                """, db_locmax_insert)
+                # Neighours method
+                if (self.method == 5 or self.method == 73 ):
+                    cur.execute("""
+                            SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
+                            where (nb."Difference") > {}
+                            group by CenterID order by ABS(nb."Difference") DESC limit 3000;
+                            """.format(self.swp))
+                    db_neighbors_insert = [row for row in cur.fetchall()]
+                    cur.execute("SELECT * FROM locExtreme")
+                    if not cur.fetchone():        
+                       cur.executemany("""
+                                        INSERT INTO locExtreme 
+                                                (PolygonID, Note) 
+                                                VALUES (?, ?);
+                                        """, db_neighbors_insert)
+                       con.commit()
+                    cur.execute("""
+                                update "locExtreme"
+                                set "Note" = "neighbors";
+                                """)
+                    con.commit()
+                # Clusters method
+                if (self.method == 6):
+                    cur.execute("""
+                            SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
+                            where (nb."Difference") > {} and (nb."CID" = -1 or nb."PID" = -1) and not nb."CID" = nb."PID"
+                            group by CenterID order by ABS(nb."Difference") DESC limit 3000;
+                            """.format(self.swp))
+                    db_clusters_insert = [row for row in cur.fetchall()]
+                    cur.execute("SELECT * FROM locExtreme")
+                    if not cur.fetchone():        
+                       cur.executemany("""
+                                        INSERT INTO locExtreme 
+                                                (PolygonID, Note) 
+                                                VALUES (?, ?);
+                                        """, db_clusters_insert)
+                       con.commit()
+                    cur.execute("""
+                                update "locExtreme"
+                                set "Note" = "clusters";
+                                """)
+                    con.commit()
+                # Nested method
+                if (self.method == 8):
+                    cur.execute("""
+                            SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
+                            where (nb."Difference") > {} and nb."CID" = nb."PID"
+                            group by CenterID order by ABS(nb."Difference") DESC limit 3000;
+                            """.format(self.swp))
+                    db_nested_insert = [row for row in cur.fetchall()]       
+                    cur.execute("SELECT * FROM locExtreme")
+                    if not cur.fetchone():   
+                        cur.executemany("""
+                                        INSERT INTO locExtreme 
+                                                (PolygonID, Note) 
+                                                VALUES (?, ?);
+                                        """, db_nested_insert)
                         con.commit()
-                        
-                    if cond == True and minval <= objval and k == 0:
-                        db_locmin_insert = [feature['properties'][fid],
-                                            "localmin"]
-                        
-                        #if not cur fetchone fehlt!
-                        cur.execute("""
-                                INSERT INTO locExtreme 
-                                        (PolygonID, Note) 
-                                        VALUES (?, ?);
-                                """, db_locmin_insert)
-                        con.commit()
-                else:
-                   # Hotspot method
-                   if (self.method == 4):
-                       g_bin = int(feature['properties']['Gi_Bin'])
-                       if (g_bin == 3):
-                           db_hotspot_insert = [feature['properties'][fid],
-                                                "hotspot"]
-                           cur.execute("""
-                                    INSERT INTO locExtreme 
-                                            (PolygonID, Note) 
-                                            VALUES (?, ?);
-                                    """, db_hotspot_insert)
-                           con.commit()
-                       elif (g_bin == -3):
-                           db_coldspot_insert = [feature['properties'][fid],
-                                                "coldspot"]
-                           cur.execute("""
-                                    INSERT INTO locExtreme 
-                                            (PolygonID, Note) 
-                                            VALUES (?, ?);
-                                    """, db_coldspot_insert)
-                           con.commit()                
+                    cur.execute("""
+                                update "locExtreme"
+                                set "Note" = "nested";
+                                """)
+                    con.commit()
                     
-            source.close()
-            
-            # Neighours method
-            if (self.method == 5 or self.method == 73):
-                cur.execute("""
-                        SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
-                        where (nb."Difference") > {}
-                        group by CenterID order by ABS(nb."Difference") DESC limit 3000;
-                        """.format(self.swp))
-                db_neighbors_insert = [row for row in cur.fetchall()]
-                cur.execute("SELECT * FROM locExtreme")
-                if not cur.fetchone():        
-                   cur.executemany("""
-                                    INSERT INTO locExtreme 
-                                            (PolygonID, Note) 
-                                            VALUES (?, ?);
-                                    """, db_neighbors_insert)
-                   con.commit()
-                cur.execute("""
-                            update "locExtreme"
-                            set "Note" = "neighbors";
-                            """)
-                con.commit()
-            # Clusters method
-            if (self.method == 6):
-                cur.execute("""
-                        SELECT distinct(nb."CenterID"), nb."Difference" FROM "neighborPairs" nb
-                        where (nb."Difference") > {} and (nb."CID" = -1 or nb."PID" = -1) and not nb."CID" = nb."PID"
-                        group by CenterID order by ABS(nb."Difference") DESC limit 3000;
-                        """.format(self.swp))
-                db_clusters_insert = [row for row in cur.fetchall()]
-                cur.execute("SELECT * FROM locExtreme")
-                if not cur.fetchone():        
-                   cur.executemany("""
-                                    INSERT INTO locExtreme 
-                                            (PolygonID, Note) 
-                                            VALUES (?, ?);
-                                    """, db_clusters_insert)
-                   con.commit()
-                cur.execute("""
-                            update "locExtreme"
-                            set "Note" = "clusters";
-                            """)
-                con.commit()
             print("Finish neighborsearch, method: " + str(self.method))
         
     def selection(self):
@@ -778,6 +823,27 @@ class aChor(object):
                           VALUES (?, ?, 'clusters');""", (db_selection_clusters))
                 con.commit()
         
+        
+     ################################################################################
+    
+        # sql statement for nested
+        elif (self.method == 8):
+            sql_nested = """
+            SELECT nb."CenterID", ABS(nb."Difference") FROM "neighborPairs" nb
+                  WHERE nb."Difference" > {} and nb."CID" = nb."PID" 
+                  GROUP by nb."CenterID", ABS(nb."Difference")
+                  ORDER by ABS(nb."Difference") DESC limit 3000;
+            """.format(self.swp)
+            cur.execute(sql_nested)
+            db_selection_nested = [row for row in cur.fetchall()]
+    
+    
+            cur.execute("SELECT * FROM locExtremePairs")
+            if not cur.fetchone():        
+                cur.executemany("""
+                    INSERT INTO locExtremePairs (CenterID, min, Note)
+                          VALUES (?, ?, 'nested');""", (db_selection_nested))
+                con.commit()
     ################################################################################
         
         print("Finish selection.\nStarting sweep and generate breaks...")
@@ -852,6 +918,15 @@ class aChor(object):
                                         ORDER BY loc."min" DESC;""")
                 con.commit()
             if self.method == 6:
+                cur.execute("""INSERT INTO line_sweep 
+                            SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
+                                        FROM "locExtremePairs" loc, "neighborPairs" nb
+                                        WHERE loc."CenterID" = nb."CenterID" and loc."min" = ABS(nb."Difference")
+                                        GROUP BY loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor"
+                                        ORDER BY loc."min" DESC;""")
+                con.commit()
+                
+            if self.method == 8:
                 cur.execute("""INSERT INTO line_sweep 
                             SELECT loc."CenterID", nb."PolygonID", nb."Center", nb."Neighbor", loc."min", loc."Note"
                                         FROM "locExtremePairs" loc, "neighborPairs" nb
@@ -1028,8 +1103,10 @@ if __name__ == "__main__":
     parser.add_argument('swp', help='sweep interval', type=float)
     parser.add_argument('field', help='field to evaluate', type=str)
     parser.add_argument('shp', help='shapefile', type=str)
-    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors, 6=clusters, 7=globalextreme', type=int)
+    parser.add_argument('calfd', help='category field for nested (optional)', type=str)
+    parser.add_argument('-m', '--method', help='method for evaluation 1=localextremes, 2=localmax, 3=localmin, 4=hotspot, 5=neighbors, 6=clusters, 7=globalextreme, 8=nested', type=int)
     parser.add_argument('-o', '--output', help='output to hdd', action='store_true')
+
     args = parser.parse_args()
 
     cls = args.classes
@@ -1037,8 +1114,9 @@ if __name__ == "__main__":
     method = args.method
     field = args.field
     shp = args.shp
+    calfd=args.calfd
     output = args.output  
     start = time.time()
-    aChor(cls, swp, field, shp, 1 if not method else method, 0 if output else 0)
+    aChor(cls, swp, field, shp, '' if not calfd else calfd, 1 if not method else method, 0 if output else 0)
     print("Execution time: {}s".format(round(time.time()-start)))
     
