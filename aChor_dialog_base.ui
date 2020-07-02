@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>411</width>
-    <height>528</height>
+    <height>564</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>480</y>
+     <x>40</x>
+     <y>510</y>
      <width>261</width>
      <height>32</height>
     </rect>
@@ -58,8 +58,8 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>400</y>
+     <x>20</x>
+     <y>430</y>
      <width>221</width>
      <height>16</height>
     </rect>
@@ -71,8 +71,8 @@
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>350</y>
+     <x>20</x>
+     <y>380</y>
      <width>191</width>
      <height>31</height>
     </rect>
@@ -87,8 +87,8 @@
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>310</y>
+     <x>20</x>
+     <y>340</y>
      <width>141</width>
      <height>16</height>
     </rect>
@@ -100,8 +100,8 @@
   <widget class="QComboBox" name="comboBox">
    <property name="geometry">
     <rect>
-     <x>200</x>
-     <y>310</y>
+     <x>190</x>
+     <y>340</y>
      <width>161</width>
      <height>22</height>
     </rect>
@@ -110,8 +110,8 @@
   <widget class="QLabel" name="labeltext">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>440</y>
+     <x>20</x>
+     <y>470</y>
      <width>141</width>
      <height>16</height>
     </rect>
@@ -123,8 +123,8 @@
   <widget class="QLineEdit" name="lineEdit">
    <property name="geometry">
     <rect>
-     <x>262</x>
-     <y>400</y>
+     <x>252</x>
+     <y>430</y>
      <width>101</width>
      <height>22</height>
     </rect>
@@ -136,8 +136,8 @@
   <widget class="QLineEdit" name="lineEdit2">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>350</y>
+     <x>240</x>
+     <y>380</y>
      <width>113</width>
      <height>22</height>
     </rect>
@@ -207,8 +207,8 @@
   <widget class="QComboBox" name="cBox">
    <property name="geometry">
     <rect>
-     <x>200</x>
-     <y>440</y>
+     <x>190</x>
+     <y>470</y>
      <width>161</width>
      <height>22</height>
     </rect>
@@ -220,12 +220,27 @@
    </item>
    <item>
     <property name="text">
-     <string>Green - Yellow - Red</string>
+     <string>White - Purple</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Blue-Orange-Red</string>
+     <string>White - Orange</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Yellow - Cyan - Blue</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>White - Blue - Green</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>White - Pink - Purple</string>
     </property>
    </item>
   </widget>
@@ -424,14 +439,59 @@
   <widget class="QPushButton" name="btn_help">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>483</y>
+     <x>310</x>
+     <y>513</y>
      <width>82</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
     <string>Help</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>300</y>
+     <width>101</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Category field:</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cBox2">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>300</y>
+     <width>161</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rdb8">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>150</y>
+     <width>151</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Nested</string>
+   </property>
+   <property name="autoExclusive">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>
