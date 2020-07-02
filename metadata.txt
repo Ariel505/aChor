@@ -1,28 +1,28 @@
 # aChor metadata:
 
 [general]
-name=Task-Oriented Data Classification for Polygon
+name=Extreme Value Classification for Polygon
 qgisMinimumVersion=3.0
 description=Task-Oriented Data Classification for Choropleth Maps  <br/>  Pre-request python packages: fiona, shapely, pysal, rtree, sklearn, dbf
-version=1.0
+version=1.1
 author=Prof. Jochen Schiewe, M.Sc. Juiwen Chang, Philipp Loose
 email=juiwen.chang@hcu-hamburg.de
 
-about=Copyright: Hafencity University Hamburg - Lab for Geoinformatics and Geovisualization (g2lab) <br/> This plugin helps you to better display spatial patterns for choropleth maps.
+about=Copyright: Hafencity University Hamburg - Lab for Geoinformatics and Geovisualization (g2lab) <br/> This plugin helps you to better display local extreme values within polygon for choropleth maps.
 
 tracker=https://github.com/Ariel505/aChor/issues/
 
-repository=https://gitlab.com/g2lab/aChor
+repository=https://gitlab.com/g2lab/aChor/
 
 # End of mandatory metadata
 
 # Recommended items:
 
 # Changelog:
- changelog=add global extremes methods
+ changelog=add nested method
 
 # Tags are comma separated with spaces allowed
-tags=python, classification, Choropleth Maps, Local Extreme Values, Hotspot, Clusters, polygon, Vector, Style
+tags=python, classification, Choropleth Maps, Local Extreme Values, Hotspot, cluster, polygon, Vector, Style
 
 homepage=http://www.geomatik-hamburg.de/g2lab/research-achor.html
 category=Vector
